@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#1e8e3e">
+  <title>SOMD Time Clock</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
+  <style>
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      padding: 0;
+      margin: 0;
+      background: #f2f4f7;
+    }
+    .container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      margin-top: 18px;
+    }
+    #timeDisplay {
+      font-size: 32px;
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    #status {
+      padding: 10px;
+      margin-bottom: 12px;
+      font-weight: 600;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .ok { background:#e8f5e9; color:#1b5e20; }
+    .err { background:#ffebee; color:#b71c1c; }
+    .warn { background:#fff4e5; color:#e65100; }
+    .offline-badge {
+      background: #ff9800;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .install-prompt {
+      background: #2196f3;
+      color: white;
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .install-prompt button {
+      background: white;
+      color: #2196f3;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    label { font-weight:600; margin-top:14px; display:block; }
+    select, input, textarea {
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      font-size:16px;
+      box-sizing:border-box;
+    }
+    button {
+      width:100%;
+      padding:14px;
+      margin-top:14px;
+      border:none;
+      border-radius:12px;
+      font-weight:700;
+      font-size:17px;
+      color:white;
+      cursor:pointer;
+      transition:0.2s;
+    }
+    .clockInBtn { background:#1e8e3e; }
+    .clockOutBtn { background:#c62828; }
+    .myTimesBtn { background:#1976d2; }
+
+    button:active {
+      transform:scale(0.97);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Install Prompt -->
+    <div id="installPrompt" style="display:none;" class="install-prompt">
+      <h3 style="margin-top:0;">📱 Install App</h3>
+      <p>Add to home screen for offline access!</p>
+      <button onclick="installApp()">Install</button>
+      <button onclick="dismissInstall()">Not Now</button>
+    </div>
+
+    <!-- Offline Badge -->
+    <div id="offlineBadge" style="display:none;" class="offline-badge">
+      📴 Offline Mode - Data will sync later
+    </div>
+
+    <div id="timeDisplay">--:--:--</div>
+    <div id="status" class="warn">Loading…</div>
+
+    <div class="card">
+      <label>Employee</label>
+      <select id="employee"></select>
+
+      <label>Client</label>
+      <select id="client"></select>
+
+      <label>Role (optional)</label>
+      <input id="role" placeholder="RN, LPN, CNA, Caregiver…">
+
+      <label>Mileage for this visit (Clock Out)</label>
+      <input id="mileage" type="number" min="0" step="0.1" placeholder="e.g. 12.5">
+
+      <label>Note (optional)</label>
+      <textarea id="note" rows="2"></textarea>
+
+      <button class="clockInBtn" onclick="submitClock('Clock In')">Clock In</button>
+      <button class="clockOutBtn" onclick="submitClock('Clock Out')">Clock Out</button>
+      <button class="myTimesBtn" onclick="window.location.href='my-times.html'">My Times</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('Service Worker registered'))
+        .catch(err => console.log('Service Worker registration failed'));
+    }
+  </script>
+</body>
+</html>
