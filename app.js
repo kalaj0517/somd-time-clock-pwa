@@ -1,5 +1,5 @@
 // YOUR GOOGLE APPS SCRIPT URL - YOU'LL UPDATE THIS!
-const API_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwvwSVkQUj3At2Hjd37MnNy2ZC3XMu69gKU5WVXxDImDwPZ91A4jNaTB_HolgI1zdvc/exec';
 
 let lat = null, lng = null, meta = null;
 let deferredPrompt = null;
