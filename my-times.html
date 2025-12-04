@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1976d2">
+  <title>My Work Times</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+    h2 {
+      margin-top: 10px;
+      color: #333;
+    }
+    .backBtn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      background: #424242;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    #status {
+      padding: 12px;
+      border-radius: 10px;
+      margin: 12px 0;
+      font-weight: 600;
+      text-align: center;
+    }
+    .ok { background: #e8f5e9; color: #1b5e20; }
+    .err { background: #ffebee; color: #b71c1c; }
+    .warn { background: #fff4e5; color: #e65100; }
+    .summary {
+      display: flex;
+      justify-content: space-around;
+      margin: 20px 0;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .summary-item {
+      text-align: center;
+    }
+    .summary-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #1976d2;
+    }
+    .summary-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button class="backBtn" onclick="window.location.href='index.html'">← Back to Time Clock</button>
+    
+    <h2>My Work Times</h2>
+    <div id="status" class="warn">Loading...</div>
+
+    <div class="summary">
+      <div class="summary-item">
+        <div class="summary-value" id="totalHours">0.0</div>
+        <div class="summary-label">Total Hours</div>
+      </div>
+      <div class="summary-item">
+        <div class="summary-value" id="totalMiles">0.0</div>
+        <div class="summary-label">Total Miles</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // This will load cached data for offline viewing
+    // Full implementation would fetch from your API when online
+    document.getElementById('status').textContent = 'Feature coming soon!';
+    document.getElementById('status').className = 'ok';
+  </script>
+</body>
+</html>
