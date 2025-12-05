@@ -3,141 +3,366 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#1e8e3e">
+  <meta name="theme-color" content="#0d7377">
   <title>SOMD Time Clock</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="icon-192.png">
   <style>
-    body {
-      font-family: system-ui, Arial, sans-serif;
-      padding: 0;
-      margin: 0;
-      background: #f2f4f7;
+    :root {
+      --primary: #0d7377;      /* Teal - professional medical */
+      --primary-dark: #094d50;
+      --primary-light: #14a3a8;
+      --success: #2e7d32;
+      --warning: #f57c00;
+      --error: #c62828;
+      --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .header p {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
     .container {
       max-width: 520px;
       margin: 0 auto;
-      padding: 18px;
+      padding: 20px;
     }
+
     .card {
       background: white;
-      border-radius: 14px;
-      padding: 20px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-      margin-top: 18px;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
     }
+
     #timeDisplay {
-      font-size: 32px;
+      font-size: 48px;
       text-align: center;
       font-weight: 700;
-      margin-bottom: 8px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+      font-variant-numeric: tabular-nums;
     }
+
     #status {
-      padding: 10px;
-      margin-bottom: 12px;
+      padding: 14px;
+      margin-bottom: 20px;
       font-weight: 600;
-      border-radius: 10px;
+      border-radius: 12px;
       text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     .ok { background:#e8f5e9; color:#1b5e20; }
     .err { background:#ffebee; color:#b71c1c; }
-    .warn { background:#fff4e5; color:#e65100; }
+    .warn { background:#fff3e0; color:#e65100; }
+
     .offline-badge {
-      background: #ff9800;
+      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
       color: white;
-      padding: 8px 16px;
-      border-radius: 20px;
+      padding: 12px 20px;
+      border-radius: 25px;
       font-size: 14px;
       font-weight: 600;
       text-align: center;
-      margin-bottom: 12px;
-    }
-    .install-prompt {
-      background: #2196f3;
-      color: white;
-      padding: 16px;
-      border-radius: 10px;
       margin-bottom: 16px;
-      text-align: center;
+      box-shadow: 0 4px 12px rgba(238, 90, 111, 0.3);
+      animation: pulse 2s infinite;
     }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    .install-prompt {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .install-prompt h3 {
+      margin-bottom: 8px;
+      font-size: 20px;
+    }
+
     .install-prompt button {
       background: white;
-      color: #2196f3;
+      color: #667eea;
       border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
+      padding: 12px 24px;
+      border-radius: 25px;
       font-weight: 600;
       cursor: pointer;
       margin: 5px;
+      font-size: 15px;
+      transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    label { font-weight:600; margin-top:14px; display:block; }
+    .install-prompt button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    label {
+      font-weight: 600;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      display: block;
+      color: #333;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     select, input, textarea {
-      width:100%;
-      padding:12px;
-      border-radius:10px;
-      border:1px solid #ccc;
-      font-size:16px;
-      box-sizing:border-box;
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 2px solid #e0e0e0;
+      font-size: 16px;
+      transition: border-color 0.3s, box-shadow 0.3s;
     }
+
+    select:focus, input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(13, 115, 119, 0.1);
+    }
+
     button {
-      width:100%;
-      padding:14px;
-      margin-top:14px;
-      border:none;
-      border-radius:12px;
-      font-weight:700;
-      font-size:17px;
-      color:white;
-      cursor:pointer;
-      transition:0.2s;
+      width: 100%;
+      padding: 16px;
+      margin-top: 16px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 17px;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
     }
-    .clockInBtn { background:#1e8e3e; }
-    .clockOutBtn { background:#c62828; }
-    .myTimesBtn { background:#1976d2; }
 
     button:active {
-      transform:scale(0.97);
+      transform: scale(0.98);
+    }
+
+    button:hover {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+
+    .clockInBtn {
+      background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
+      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+    }
+
+    .clockOutBtn {
+      background: linear-gradient(135deg, #c62828 0%, #e53935 100%);
+      box-shadow: 0 4px 15px rgba(198, 40, 40, 0.3);
+    }
+
+    .myTimesBtn {
+      background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+      box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+    }
+
+    .clientInfoBtn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--primary);
+      transition: transform 0.2s;
+      width: auto;
+      padding: 4px;
+      margin: 0;
+    }
+
+    .clientInfoBtn:hover {
+      transform: translateY(-50%) scale(1.2);
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    #clientPopup {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      backdrop-filter: blur(4px);
+    }
+
+    #clientPopup .popupCard {
+      background: white;
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #clientPopup h3 {
+      color: var(--primary);
+      margin-bottom: 16px;
+    }
+
+    .version-badge {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-top: 20px;
+    }
+
+    /* Loading animation */
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
+  <!-- Header -->
+  <div class="header">
+    <h1>🏥 SOMD Home Health</h1>
+    <p>GPS Time Clock System</p>
+  </div>
+
   <div class="container">
     <!-- Install Prompt -->
     <div id="installPrompt" style="display:none;" class="install-prompt">
-      <h3 style="margin-top:0;">📱 Install App</h3>
-      <p>Add to home screen for offline access!</p>
-      <button onclick="installApp()">Install</button>
-      <button onclick="dismissInstall()">Not Now</button>
+      <h3>📱 Install App</h3>
+      <p>Add to home screen for quick access and offline use!</p>
+      <button onclick="installApp()">Install Now</button>
+      <button onclick="dismissInstall()">Maybe Later</button>
     </div>
 
     <!-- Offline Badge -->
     <div id="offlineBadge" style="display:none;" class="offline-badge">
-      📴 Offline Mode - Data will sync later
+      📴 Offline Mode - Data will sync when connected
     </div>
 
+    <!-- Time Display -->
     <div id="timeDisplay">--:--:--</div>
-    <div id="status" class="warn">Loading…</div>
+    
+    <!-- Status -->
+    <div id="status" class="warn">
+      <span class="loading"></span>
+      Loading…
+    </div>
 
+    <!-- Main Card -->
     <div class="card">
-      <label>Employee</label>
+      <label>👤 Employee</label>
       <select id="employee"></select>
 
-      <label>Client</label>
-      <select id="client"></select>
+      <label>🏠 Client</label>
+      <div class="input-wrapper">
+        <select id="client"></select>
+        <button class="clientInfoBtn" onclick="showClientInfo()">ℹ️</button>
+      </div>
 
-      <label>Role (optional)</label>
+      <label>💼 Role (optional)</label>
       <input id="role" placeholder="RN, LPN, CNA, Caregiver…">
 
-      <label>Mileage for this visit (Clock Out)</label>
+      <label>🚗 Mileage for this visit</label>
       <input id="mileage" type="number" min="0" step="0.1" placeholder="e.g. 12.5">
 
-      <label>Note (optional)</label>
-      <textarea id="note" rows="2"></textarea>
+      <label>📝 Note (optional)</label>
+      <textarea id="note" rows="2" placeholder="Any special notes about this visit..."></textarea>
 
-      <button class="clockInBtn" onclick="submitClock('Clock In')">Clock In</button>
-      <button class="clockOutBtn" onclick="submitClock('Clock Out')">Clock Out</button>
-      <button class="myTimesBtn" onclick="window.location.href='my-times.html'">My Times</button>
+      <button class="clockInBtn" onclick="submitClock('Clock In')">
+        ⏱️ Clock In
+      </button>
+      <button class="clockOutBtn" onclick="submitClock('Clock Out')">
+        🏁 Clock Out
+      </button>
+      <button class="myTimesBtn" onclick="window.location.href='my-times.html'">
+        📊 My Times
+      </button>
+    </div>
+
+    <div class="version-badge">
+      v1.1.0 • SOMD Home Health
+    </div>
+  </div>
+
+  <!-- CLIENT INFO POPUP -->
+  <div id="clientPopup">
+    <div class="popupCard">
+      <h3 id="clientInfoTitle"></h3>
+      <p id="clientInfoBody"></p>
+      <button onclick="closeClientInfo()" style="margin-top:16px;width:100%;padding:14px;border-radius:12px;border:none;background:var(--primary);color:white;font-weight:700;">
+        Close
+      </button>
     </div>
   </div>
 
@@ -146,8 +371,12 @@
     // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
-        .then(reg => console.log('Service Worker registered'))
-        .catch(err => console.log('Service Worker registration failed'));
+        .then(reg => {
+          console.log('Service Worker registered');
+          // Auto-check for updates
+          reg.update();
+        })
+        .catch(err => console.log('Service Worker registration failed:', err));
     }
   </script>
 </body>
