@@ -7,176 +7,273 @@
   <title>My Work Times</title>
   <link rel="manifest" href="manifest.json">
   <style>
-    body {
-      font-family: system-ui, Arial, sans-serif;
-      background: #f4f6f8;
+    :root {
+      --primary: #0d7377;
+      --primary-dark: #094d50;
+      --primary-light: #14a3a8;
+    }
+
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 600;
+    }
+
     .container {
       max-width: 900px;
       margin: 0 auto;
       padding: 18px;
     }
-    h2 {
-      margin-top: 10px;
-      color: #333;
-    }
+
     .backBtn {
       padding: 12px 24px;
       border: none;
-      border-radius: 10px;
-      background: #424242;
-      color: white;
+      border-radius: 25px;
+      background: white;
+      color: #1976d2;
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
     }
+
+    .backBtn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
     #status {
-      padding: 12px;
-      border-radius: 10px;
+      padding: 14px;
+      border-radius: 12px;
       margin: 12px 0;
       font-weight: 600;
       text-align: center;
     }
-    .ok { background: #e8f5e9; color: #1b5e20; }
-    .err { background: #ffebee; color: #b71c1c; }
-    .warn { background: #fff4e5; color: #e65100; }
-    
+    .ok { background:#e8f5e9; color:#1b5e20; }
+    .err { background:#ffebee; color:#b71c1c; }
+    .warn { background:#fff3e0; color:#e65100; }
+
     .card {
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      padding: 24px;
       margin-bottom: 20px;
     }
-    
+
     .summary {
-      display: flex;
-      justify-content: space-around;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
       margin: 20px 0;
     }
+
     .summary-item {
       text-align: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 16px;
     }
+
     .summary-value {
-      font-size: 36px;
+      font-size: 42px;
       font-weight: 700;
-      color: #1976d2;
+      background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
+
     .summary-label {
       font-size: 14px;
       color: #666;
-      margin-top: 4px;
+      margin-top: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    
+
     .tabs {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 12px;
+      margin-bottom: 24px;
+      background: white;
+      padding: 8px;
+      border-radius: 16px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
+
     .tab {
-      padding: 12px 24px;
+      flex: 1;
+      padding: 14px 20px;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       font-weight: 600;
       cursor: pointer;
-      background: #e0e0e0;
-      color: #555;
-      transition: 0.2s;
+      background: transparent;
+      color: #666;
+      transition: all 0.3s;
     }
+
     .tab.active {
-      background: #1976d2;
+      background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
       color: white;
+      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
     }
-    
+
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 16px;
     }
+
     th {
-      background: #f5f5f5;
-      padding: 12px;
+      background: #f8f9fa;
+      padding: 14px 12px;
       text-align: left;
       font-weight: 600;
-      border-bottom: 2px solid #ddd;
+      border-bottom: 2px solid #e0e0e0;
+      color: #555;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
+
     td {
-      padding: 10px 12px;
-      border-bottom: 1px solid #eee;
+      padding: 14px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 14px;
     }
+
     tr:hover {
-      background: #f9f9f9;
+      background: #f8f9fa;
     }
-    
+
     .status-badge {
-      padding: 4px 10px;
-      border-radius: 12px;
+      padding: 6px 12px;
+      border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
+      display: inline-block;
     }
+
     .status-pending {
-      background: #fff4e5;
-      color: #e65100;
+      background: #fff3e0;
+      color: #f57c00;
     }
+
     .status-approved {
       background: #e8f5e9;
-      color: #1b5e20;
+      color: #2e7d32;
     }
+
     .status-rejected {
       background: #ffebee;
-      color: #b71c1c;
+      color: #c62828;
     }
 
     #emailPrompt {
       background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      padding: 32px;
+      border-radius: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
     }
+
+    #emailPrompt h3 {
+      color: var(--primary);
+      margin-bottom: 12px;
+      font-size: 22px;
+    }
+
     #emailPrompt input {
       width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+      padding: 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
       font-size: 16px;
-      box-sizing: border-box;
-      margin: 10px 0;
+      margin: 16px 0;
+      transition: border-color 0.3s;
     }
+
+    #emailPrompt input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
     #emailPrompt button {
       width: 100%;
-      padding: 12px;
-      background: #1976d2;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 12px;
       font-weight: 600;
       cursor: pointer;
+      font-size: 16px;
+      transition: transform 0.2s;
+    }
+
+    @media (max-width: 600px) {
+      .summary {
+        grid-template-columns: 1fr;
+      }
+      table {
+        font-size: 13px;
+      }
+      th, td {
+        padding: 10px 8px;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="header">
+    <h1>📊 My Work Times</h1>
+  </div>
+
   <div class="container">
     <button class="backBtn" onclick="window.location.href='index.html'">← Back to Time Clock</button>
     
-    <h2>My Work Times</h2>
-    
-    <!-- Email Prompt (shown if no email stored) -->
+    <!-- Email Prompt -->
     <div id="emailPrompt" style="display:none;">
-      <h3>Enter Your Email</h3>
-      <p>Please enter your work email to view your hours:</p>
+      <h3>👋 Welcome!</h3>
+      <p style="color:#666; margin-bottom: 8px;">Enter your work email to view your hours</p>
       <input type="email" id="emailInput" placeholder="your.email@gmail.com">
       <button onclick="saveEmail()">Continue</button>
     </div>
 
+    <!-- Main Content -->
     <div id="mainContent" style="display:none;">
       <div id="status" class="warn">Loading your times...</div>
 
       <div class="tabs">
-        <button class="tab active" id="todayTab" onclick="loadRange('today')">Today</button>
-        <button class="tab" id="payTab" onclick="loadRange('pay')">This Week (Sat-Fri)</button>
+        <button class="tab active" id="todayTab" onclick="loadRange('today')">
+          📅 Today
+        </button>
+        <button class="tab" id="payTab" onclick="loadRange('pay')">
+          📆 This Week (Sat-Fri)
+        </button>
       </div>
 
       <div class="card">
@@ -193,7 +290,7 @@
       </div>
 
       <div class="card">
-        <h3 style="margin-top:0;">Time Entries</h3>
+        <h3 style="margin-top:0; color:#333; margin-bottom: 16px;">⏰ Time Entries</h3>
         <table id="timesTable">
           <thead>
             <tr>
@@ -207,10 +304,14 @@
           </thead>
           <tbody></tbody>
         </table>
-        <p id="noData" style="display:none; text-align:center; color:#999; padding:20px;">
-          No entries found for this period.
+        <p id="noData" style="display:none; text-align:center; color:#999; padding:30px;">
+          No entries found for this period. 🤷‍♀️
         </p>
       </div>
+    </div>
+
+    <div class="version-badge">
+      v1.1.0 • SOMD Home Health Time Clock
     </div>
   </div>
 
@@ -223,12 +324,11 @@
     function setStatus(msg, cls) {
       const el = document.getElementById('status');
       if (el) {
-        el.textContent = msg;
+        el.innerHTML = msg; // Use innerHTML to allow icons
         el.className = cls;
       }
     }
 
-    // Check if user email is stored
     function checkEmail() {
       userEmail = localStorage.getItem('userEmail');
       
@@ -263,7 +363,6 @@
       console.log('Loading range:', range);
       currentRange = range;
       
-      // Update active tab
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       if (range === 'today') {
         document.getElementById('todayTab').classList.add('active');
@@ -271,10 +370,9 @@
         document.getElementById('payTab').classList.add('active');
       }
       
-      setStatus('Loading...', 'warn');
+      setStatus('<span class="loading"></span> Loading...', 'warn');
       
       try {
-        // Build URL with parameters (GET request - no CORS!)
         const params = new URLSearchParams({
           action: 'getMyTimes',
           email: userEmail,
@@ -294,35 +392,35 @@
         
       } catch (error) {
         console.error('Error loading times:', error);
-        setStatus('Error loading times. Please try again.', 'err');
+        setStatus('❌ Error loading times. Please try again.', 'err');
       }
     }
 
     function displayTimes(data) {
-      console.log('Displaying times:', data);
-      
-      // Update summary
       const hours = typeof data.totalHours === 'number' ? data.totalHours : 0;
       const miles = typeof data.totalMileage === 'number' ? data.totalMileage : 0;
       
       document.getElementById('totalHours').textContent = hours.toFixed(1);
       document.getElementById('totalMiles').textContent = miles.toFixed(1);
       
-      // Update table
       const tbody = document.querySelector('#timesTable tbody');
       tbody.innerHTML = '';
       
       if (!data.rows || data.rows.length === 0) {
         document.getElementById('noData').style.display = 'block';
         document.getElementById('timesTable').style.display = 'none';
-        setStatus(currentRange === 'today' ? 'No entries for today.' : 'No entries this week.', 'ok');
+        setStatus(
+          currentRange === 'today' ? 
+          '📭 No entries for today.' : 
+          '📭 No entries this week.', 
+          'ok'
+        );
         return;
       }
       
       document.getElementById('noData').style.display = 'none';
       document.getElementById('timesTable').style.display = 'table';
       
-      // Sort by clock in time (newest first)
       data.rows.sort((a, b) => {
         const aTime = a.clockIn ? new Date(a.clockIn) : new Date(0);
         const bTime = b.clockIn ? new Date(b.clockIn) : new Date(0);
@@ -356,15 +454,15 @@
         }
         
         const clockInStr = formatDateTime(row.clockIn);
-        const clockOutStr = row.clockOut ? formatDateTime(row.clockOut) : 'Still clocked in';
+        const clockOutStr = row.clockOut ? formatDateTime(row.clockOut) : '⏱️ Still clocked in';
         const status = row.status || 'Pending';
         const statusClass = 'status-' + status.toLowerCase();
         
         tr.innerHTML = `
-          <td>${row.client || ''}</td>
+          <td><strong>${row.client || ''}</strong></td>
           <td>${clockInStr}</td>
           <td>${clockOutStr}</td>
-          <td>${safeValue(row.duration, 2)}</td>
+          <td><strong>${safeValue(row.duration, 2)}</strong></td>
           <td>${safeValue(row.mileage, 1)}</td>
           <td><span class="status-badge ${statusClass}">${status}</span></td>
         `;
@@ -372,10 +470,9 @@
         tbody.appendChild(tr);
       });
       
-      setStatus('Times loaded successfully!', 'ok');
+      setStatus('✅ Times loaded successfully!', 'ok');
     }
 
-    // Initialize
     checkEmail();
   </script>
 </body>
