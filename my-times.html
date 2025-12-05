@@ -42,14 +42,19 @@
     .ok { background: #e8f5e9; color: #1b5e20; }
     .err { background: #ffebee; color: #b71c1c; }
     .warn { background: #fff4e5; color: #e65100; }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
     .summary {
       display: flex;
       justify-content: space-around;
       margin: 20px 0;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .summary-item {
       text-align: center;
@@ -64,6 +69,92 @@
       color: #666;
       margin-top: 4px;
     }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #e0e0e0;
+      color: #555;
+      transition: 0.2s;
+    }
+    .tab.active {
+      background: #1976d2;
+      color: white;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th {
+      background: #f5f5f5;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 2px solid #ddd;
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+    }
+    tr:hover {
+      background: #f9f9f9;
+    }
+    
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-pending {
+      background: #fff4e5;
+      color: #e65100;
+    }
+    .status-approved {
+      background: #e8f5e9;
+      color: #1b5e20;
+    }
+    .status-rejected {
+      background: #ffebee;
+      color: #b71c1c;
+    }
+
+    #emailPrompt {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    #emailPrompt input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+      margin: 10px 0;
+    }
+    #emailPrompt button {
+      width: 100%;
+      padding: 12px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -71,25 +162,221 @@
     <button class="backBtn" onclick="window.location.href='index.html'">← Back to Time Clock</button>
     
     <h2>My Work Times</h2>
-    <div id="status" class="warn">Loading...</div>
+    
+    <!-- Email Prompt (shown if no email stored) -->
+    <div id="emailPrompt" style="display:none;">
+      <h3>Enter Your Email</h3>
+      <p>Please enter your work email to view your hours:</p>
+      <input type="email" id="emailInput" placeholder="your.email@gmail.com">
+      <button onclick="saveEmail()">Continue</button>
+    </div>
 
-    <div class="summary">
-      <div class="summary-item">
-        <div class="summary-value" id="totalHours">0.0</div>
-        <div class="summary-label">Total Hours</div>
+    <div id="mainContent" style="display:none;">
+      <div id="status" class="warn">Loading your times...</div>
+
+      <div class="tabs">
+        <button class="tab active" id="todayTab" onclick="loadRange('today')">Today</button>
+        <button class="tab" id="payTab" onclick="loadRange('pay')">This Week (Sat-Fri)</button>
       </div>
-      <div class="summary-item">
-        <div class="summary-value" id="totalMiles">0.0</div>
-        <div class="summary-label">Total Miles</div>
+
+      <div class="card">
+        <div class="summary">
+          <div class="summary-item">
+            <div class="summary-value" id="totalHours">0.0</div>
+            <div class="summary-label">Total Hours</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value" id="totalMiles">0.0</div>
+            <div class="summary-label">Total Miles</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Time Entries</h3>
+        <table id="timesTable">
+          <thead>
+            <tr>
+              <th>Client</th>
+              <th>Clock In</th>
+              <th>Clock Out</th>
+              <th>Hours</th>
+              <th>Miles</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p id="noData" style="display:none; text-align:center; color:#999; padding:20px;">
+          No entries found for this period.
+        </p>
       </div>
     </div>
   </div>
 
   <script>
-    // This will load cached data for offline viewing
-    // Full implementation would fetch from your API when online
-    document.getElementById('status').textContent = 'Feature coming soon!';
-    document.getElementById('status').className = 'ok';
+    const API_URL = 'https://script.google.com/macros/s/AKfycbx_jPi8sLBTdLyVEbIW_dzc86nLSlZHQ4ejqu5CTCaXCKC_R799xjvG2xo9eirBiQd5/exec';
+    
+    let currentRange = 'today';
+    let userEmail = null;
+
+    function setStatus(msg, cls) {
+      const el = document.getElementById('status');
+      if (el) {
+        el.textContent = msg;
+        el.className = cls;
+      }
+    }
+
+    // Check if user email is stored
+    function checkEmail() {
+      userEmail = localStorage.getItem('userEmail');
+      
+      if (!userEmail) {
+        document.getElementById('emailPrompt').style.display = 'block';
+        document.getElementById('mainContent').style.display = 'none';
+      } else {
+        document.getElementById('emailPrompt').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        loadRange('today');
+      }
+    }
+
+    function saveEmail() {
+      const input = document.getElementById('emailInput');
+      const email = input.value.trim().toLowerCase();
+      
+      if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      
+      localStorage.setItem('userEmail', email);
+      userEmail = email;
+      
+      document.getElementById('emailPrompt').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+      loadRange('today');
+    }
+
+    async function loadRange(range) {
+      console.log('Loading range:', range);
+      currentRange = range;
+      
+      // Update active tab
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      if (range === 'today') {
+        document.getElementById('todayTab').classList.add('active');
+      } else {
+        document.getElementById('payTab').classList.add('active');
+      }
+      
+      setStatus('Loading...', 'warn');
+      
+      try {
+        // Build URL with parameters (GET request - no CORS!)
+        const params = new URLSearchParams({
+          action: 'getMyTimes',
+          email: userEmail,
+          range: range
+        });
+        
+        const response = await fetch(`${API_URL}?${params.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to load times');
+        }
+        
+        const data = await response.json();
+        console.log('Received data:', data);
+        
+        displayTimes(data);
+        
+      } catch (error) {
+        console.error('Error loading times:', error);
+        setStatus('Error loading times. Please try again.', 'err');
+      }
+    }
+
+    function displayTimes(data) {
+      console.log('Displaying times:', data);
+      
+      // Update summary
+      const hours = typeof data.totalHours === 'number' ? data.totalHours : 0;
+      const miles = typeof data.totalMileage === 'number' ? data.totalMileage : 0;
+      
+      document.getElementById('totalHours').textContent = hours.toFixed(1);
+      document.getElementById('totalMiles').textContent = miles.toFixed(1);
+      
+      // Update table
+      const tbody = document.querySelector('#timesTable tbody');
+      tbody.innerHTML = '';
+      
+      if (!data.rows || data.rows.length === 0) {
+        document.getElementById('noData').style.display = 'block';
+        document.getElementById('timesTable').style.display = 'none';
+        setStatus(currentRange === 'today' ? 'No entries for today.' : 'No entries this week.', 'ok');
+        return;
+      }
+      
+      document.getElementById('noData').style.display = 'none';
+      document.getElementById('timesTable').style.display = 'table';
+      
+      // Sort by clock in time (newest first)
+      data.rows.sort((a, b) => {
+        const aTime = a.clockIn ? new Date(a.clockIn) : new Date(0);
+        const bTime = b.clockIn ? new Date(b.clockIn) : new Date(0);
+        return bTime - aTime;
+      });
+      
+      data.rows.forEach(row => {
+        const tr = document.createElement('tr');
+        
+        function formatDateTime(dateValue) {
+          if (!dateValue) return '';
+          try {
+            const d = new Date(dateValue);
+            if (isNaN(d.getTime())) return '';
+            return d.toLocaleString([], { 
+              month: 'short', 
+              day: 'numeric', 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            });
+          } catch (e) {
+            return '';
+          }
+        }
+
+        function safeValue(val, decimals) {
+          if (val === null || val === undefined || val === '') return '0.00';
+          const num = Number(val);
+          if (isNaN(num)) return '0.00';
+          return num.toFixed(decimals || 2);
+        }
+        
+        const clockInStr = formatDateTime(row.clockIn);
+        const clockOutStr = row.clockOut ? formatDateTime(row.clockOut) : 'Still clocked in';
+        const status = row.status || 'Pending';
+        const statusClass = 'status-' + status.toLowerCase();
+        
+        tr.innerHTML = `
+          <td>${row.client || ''}</td>
+          <td>${clockInStr}</td>
+          <td>${clockOutStr}</td>
+          <td>${safeValue(row.duration, 2)}</td>
+          <td>${safeValue(row.mileage, 1)}</td>
+          <td><span class="status-badge ${statusClass}">${status}</span></td>
+        `;
+        
+        tbody.appendChild(tr);
+      });
+      
+      setStatus('Times loaded successfully!', 'ok');
+    }
+
+    // Initialize
+    checkEmail();
   </script>
 </body>
 </html>
