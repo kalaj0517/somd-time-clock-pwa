@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1976d2">
-  <title>My Work Times</title>
+  <meta name="theme-color" content="#cd9934">
+  <title>My Work Times - SOMD</title>
   <link rel="manifest" href="manifest.json">
   <style>
     :root {
-      --primary: #0d7377;
-      --primary-dark: #094d50;
-      --primary-light: #14a3a8;
+      --gold: #cd9934;
+      --gold-dark: #b8862e;
+      --gold-light: #daa842;
     }
 
     * {
@@ -21,64 +21,82 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #f0f4f8;
+      background: #fafafa;
       min-height: 100vh;
     }
 
     .header {
-      background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
       color: white;
-      padding: 20px;
+      padding: 24px 20px;
       text-align: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 20px rgba(205, 153, 52, 0.3);
     }
 
     .header h1 {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 600;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .container {
       max-width: 900px;
       margin: 0 auto;
-      padding: 18px;
+      padding: 20px;
     }
 
     .backBtn {
-      padding: 12px 24px;
+      padding: 14px 28px;
       border: none;
-      border-radius: 25px;
+      border-radius: 30px;
       background: white;
-      color: #1976d2;
+      color: var(--gold);
       font-weight: 600;
       cursor: pointer;
       margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+      border: 2px solid var(--gold);
     }
 
     .backBtn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 6px 16px rgba(205, 153, 52, 0.3);
+      background: var(--gold);
+      color: white;
     }
 
     #status {
-      padding: 14px;
-      border-radius: 12px;
-      margin: 12px 0;
+      padding: 16px;
+      border-radius: 14px;
+      margin: 16px 0;
       font-weight: 600;
       text-align: center;
+      font-size: 15px;
     }
-    .ok { background:#e8f5e9; color:#1b5e20; }
-    .err { background:#ffebee; color:#b71c1c; }
-    .warn { background:#fff3e0; color:#e65100; }
+    .ok { 
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      color: #1b5e20;
+      border: 1px solid #a5d6a7;
+    }
+    .err { 
+      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+      color: #b71c1c;
+      border: 1px solid #ef9a9a;
+    }
+    .warn { 
+      background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+      color: #e65100;
+      border: 1px solid #ffcc80;
+    }
 
     .card {
       background: white;
-      border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-      padding: 24px;
-      margin-bottom: 20px;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      padding: 28px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(205, 153, 52, 0.1);
     }
 
     .summary {
@@ -90,87 +108,96 @@
 
     .summary-item {
       text-align: center;
-      padding: 20px;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      border-radius: 16px;
+      padding: 28px;
+      background: linear-gradient(135deg, #fff9f0 0%, #ffeed9 100%);
+      border-radius: 18px;
+      border: 2px solid rgba(205, 153, 52, 0.2);
+      transition: transform 0.3s;
+    }
+
+    .summary-item:hover {
+      transform: translateY(-4px);
     }
 
     .summary-value {
-      font-size: 42px;
+      font-size: 48px;
       font-weight: 700;
-      background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+      background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold-light) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      margin-bottom: 8px;
     }
 
     .summary-label {
       font-size: 14px;
       color: #666;
-      margin-top: 8px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
     }
 
     .tabs {
-      display: flex;
-      gap: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
       margin-bottom: 24px;
       background: white;
-      padding: 8px;
-      border-radius: 16px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      padding: 10px;
+      border-radius: 18px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+      border: 1px solid rgba(205, 153, 52, 0.1);
     }
 
     .tab {
-      flex: 1;
-      padding: 14px 20px;
+      padding: 14px 16px;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       font-weight: 600;
       cursor: pointer;
       background: transparent;
       color: #666;
       transition: all 0.3s;
+      font-size: 14px;
     }
 
     .tab.active {
-      background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
       color: white;
-      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+      box-shadow: 0 6px 15px rgba(205, 153, 52, 0.35);
+      transform: translateY(-2px);
     }
 
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 16px;
+      margin-top: 20px;
     }
 
     th {
-      background: #f8f9fa;
-      padding: 14px 12px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      padding: 16px 14px;
       text-align: left;
       font-weight: 600;
-      border-bottom: 2px solid #e0e0e0;
+      border-bottom: 2px solid var(--gold);
       color: #555;
       font-size: 13px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
     }
 
     td {
-      padding: 14px 12px;
+      padding: 16px 14px;
       border-bottom: 1px solid #f0f0f0;
       font-size: 14px;
     }
 
     tr:hover {
-      background: #f8f9fa;
+      background: linear-gradient(135deg, #fffbf5 0%, #fff9f0 100%);
     }
 
     .status-badge {
-      padding: 6px 12px;
+      padding: 7px 14px;
       border-radius: 20px;
       font-size: 12px;
       font-weight: 600;
@@ -178,71 +205,98 @@
     }
 
     .status-pending {
-      background: #fff3e0;
+      background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
       color: #f57c00;
+      border: 1px solid #ffcc80;
     }
 
     .status-approved {
-      background: #e8f5e9;
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
       color: #2e7d32;
+      border: 1px solid #a5d6a7;
     }
 
     .status-rejected {
-      background: #ffebee;
+      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
       color: #c62828;
+      border: 1px solid #ef9a9a;
     }
 
     #emailPrompt {
       background: white;
-      padding: 32px;
-      border-radius: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 36px;
+      border-radius: 24px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
       text-align: center;
+      border: 2px solid rgba(205, 153, 52, 0.2);
     }
 
     #emailPrompt h3 {
-      color: var(--primary);
+      color: var(--gold);
       margin-bottom: 12px;
-      font-size: 22px;
+      font-size: 24px;
+    }
+
+    #emailPrompt p {
+      color: #666;
+      margin-bottom: 8px;
     }
 
     #emailPrompt input {
       width: 100%;
-      padding: 14px;
-      border: 2px solid #e0e0e0;
-      border-radius: 12px;
+      padding: 16px;
+      border: 2px solid #e8e8e8;
+      border-radius: 14px;
       font-size: 16px;
-      margin: 16px 0;
-      transition: border-color 0.3s;
+      margin: 20px 0;
+      transition: all 0.3s;
     }
 
     #emailPrompt input:focus {
       outline: none;
-      border-color: var(--primary);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 4px rgba(205, 153, 52, 0.1);
     }
 
     #emailPrompt button {
       width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      padding: 16px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
       color: white;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       font-weight: 600;
       cursor: pointer;
-      font-size: 16px;
-      transition: transform 0.2s;
+      font-size: 17px;
+      transition: all 0.3s;
+      box-shadow: 0 6px 20px rgba(205, 153, 52, 0.3);
+    }
+
+    #emailPrompt button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(205, 153, 52, 0.4);
+    }
+
+    .loading {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(205, 153, 52, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--gold);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     @media (max-width: 600px) {
       .summary {
         grid-template-columns: 1fr;
       }
-      table {
-        font-size: 13px;
-      }
-      th, td {
-        padding: 10px 8px;
+      .tabs {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -258,21 +312,27 @@
     <!-- Email Prompt -->
     <div id="emailPrompt" style="display:none;">
       <h3>👋 Welcome!</h3>
-      <p style="color:#666; margin-bottom: 8px;">Enter your work email to view your hours</p>
+      <p>Enter your work email to view your hours</p>
       <input type="email" id="emailInput" placeholder="your.email@gmail.com">
-      <button onclick="saveEmail()">Continue</button>
+      <button onclick="saveEmail()">💛 Continue</button>
     </div>
 
     <!-- Main Content -->
     <div id="mainContent" style="display:none;">
-      <div id="status" class="warn">Loading your times...</div>
+      <div id="status" class="warn">
+        <span class="loading"></span>
+        Loading your times...
+      </div>
 
       <div class="tabs">
         <button class="tab active" id="todayTab" onclick="loadRange('today')">
           📅 Today
         </button>
-        <button class="tab" id="payTab" onclick="loadRange('pay')">
-          📆 This Week (Sat-Fri)
+        <button class="tab" id="thisWeekTab" onclick="loadRange('thisweek')">
+          📆 This Week
+        </button>
+        <button class="tab" id="lastWeekTab" onclick="loadRange('lastweek')">
+          📋 Last Week
         </button>
       </div>
 
@@ -290,7 +350,8 @@
       </div>
 
       <div class="card">
-        <h3 style="margin-top:0; color:#333; margin-bottom: 16px;">⏰ Time Entries</h3>
+        <h3 style="margin-top:0; color:#444; margin-bottom: 20px; font-size: 20px;">⏰ Your Time Entries</h3>
+        <p id="dateRangeInfo" style="color:#666; font-size:14px; margin-bottom:16px;"></p>
         <table id="timesTable">
           <thead>
             <tr>
@@ -304,14 +365,14 @@
           </thead>
           <tbody></tbody>
         </table>
-        <p id="noData" style="display:none; text-align:center; color:#999; padding:30px;">
-          No entries found for this period. 🤷‍♀️
+        <p id="noData" style="display:none; text-align:center; color:#999; padding:40px; font-size:16px;">
+          No entries found for this period 🤷‍♀️
         </p>
       </div>
     </div>
 
-    <div class="version-badge">
-      v1.1.0 • SOMD Home Health Time Clock
+    <div class="version-badge" style="text-align:center; font-size:12px; color:#999; margin-top:24px; padding:8px;">
+      v1.2.0 • SOMD Home Health Time Clock 💛
     </div>
   </div>
 
@@ -324,7 +385,7 @@
     function setStatus(msg, cls) {
       const el = document.getElementById('status');
       if (el) {
-        el.innerHTML = msg; // Use innerHTML to allow icons
+        el.innerHTML = msg;
         el.className = cls;
       }
     }
@@ -360,14 +421,17 @@
     }
 
     async function loadRange(range) {
-      console.log('Loading range:', range);
+      console.log('📊 Loading range:', range);
       currentRange = range;
       
+      // Update active tab
       document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
       if (range === 'today') {
         document.getElementById('todayTab').classList.add('active');
-      } else {
-        document.getElementById('payTab').classList.add('active');
+      } else if (range === 'thisweek') {
+        document.getElementById('thisWeekTab').classList.add('active');
+      } else if (range === 'lastweek') {
+        document.getElementById('lastWeekTab').classList.add('active');
       }
       
       setStatus('<span class="loading"></span> Loading...', 'warn');
@@ -379,6 +443,7 @@
           range: range
         });
         
+        console.log('Fetching:', `${API_URL}?${params.toString()}`);
         const response = await fetch(`${API_URL}?${params.toString()}`);
         
         if (!response.ok) {
@@ -386,12 +451,12 @@
         }
         
         const data = await response.json();
-        console.log('Received data:', data);
+        console.log('✅ Received data:', data);
         
         displayTimes(data);
         
       } catch (error) {
-        console.error('Error loading times:', error);
+        console.error('❌ Error loading times:', error);
         setStatus('❌ Error loading times. Please try again.', 'err');
       }
     }
@@ -403,24 +468,34 @@
       document.getElementById('totalHours').textContent = hours.toFixed(1);
       document.getElementById('totalMiles').textContent = miles.toFixed(1);
       
+      // Show date range info
+      const dateRangeEl = document.getElementById('dateRangeInfo');
+      if (data.dateRange && dateRangeEl) {
+        const start = new Date(data.dateRange.start);
+        const end = new Date(data.dateRange.end);
+        dateRangeEl.textContent = `Showing: ${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+      }
+      
       const tbody = document.querySelector('#timesTable tbody');
       tbody.innerHTML = '';
       
       if (!data.rows || data.rows.length === 0) {
         document.getElementById('noData').style.display = 'block';
         document.getElementById('timesTable').style.display = 'none';
-        setStatus(
-          currentRange === 'today' ? 
-          '📭 No entries for today.' : 
-          '📭 No entries this week.', 
-          'ok'
-        );
+        
+        let message = '📭 No entries found.';
+        if (currentRange === 'today') message = '📭 No entries for today.';
+        else if (currentRange === 'thisweek') message = '📭 No entries this week.';
+        else if (currentRange === 'lastweek') message = '📭 No entries last week.';
+        
+        setStatus(message, 'ok');
         return;
       }
       
       document.getElementById('noData').style.display = 'none';
       document.getElementById('timesTable').style.display = 'table';
       
+      // Sort newest first
       data.rows.sort((a, b) => {
         const aTime = a.clockIn ? new Date(a.clockIn) : new Date(0);
         const bTime = b.clockIn ? new Date(b.clockIn) : new Date(0);
@@ -470,7 +545,7 @@
         tbody.appendChild(tr);
       });
       
-      setStatus('✅ Times loaded successfully!', 'ok');
+      setStatus(`✅ Loaded ${data.rows.length} ${data.rows.length === 1 ? 'entry' : 'entries'}`, 'ok');
     }
 
     checkEmail();
