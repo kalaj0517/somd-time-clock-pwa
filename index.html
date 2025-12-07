@@ -3,19 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#0d7377">
+  <meta name="theme-color" content="#cd9934">
   <title>SOMD Time Clock</title>
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="icon-192.png">
   <style>
     :root {
-      --primary: #0d7377;      /* Teal - professional medical */
-      --primary-dark: #094d50;
-      --primary-light: #14a3a8;
+      --gold: #cd9934;
+      --gold-dark: #b8862e;
+      --gold-light: #daa842;
       --success: #2e7d32;
       --warning: #f57c00;
       --error: #c62828;
-      --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
 
     * {
@@ -26,27 +25,28 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: #f0f4f8;
+      background: #fafafa;
       min-height: 100vh;
     }
 
     .header {
-      background: var(--primary);
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
       color: white;
-      padding: 20px;
+      padding: 24px 20px;
       text-align: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 20px rgba(205, 153, 52, 0.3);
     }
 
     .header h1 {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 600;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .header p {
       font-size: 14px;
-      opacity: 0.9;
+      opacity: 0.95;
     }
 
     .container {
@@ -57,96 +57,197 @@
 
     .card {
       background: white;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
       margin-bottom: 20px;
+      border: 1px solid rgba(205, 153, 52, 0.1);
     }
 
     #timeDisplay {
-      font-size: 48px;
+      font-size: 52px;
       text-align: center;
       font-weight: 700;
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
     }
 
     #status {
-      padding: 14px;
+      padding: 16px;
       margin-bottom: 20px;
       font-weight: 600;
-      border-radius: 12px;
+      border-radius: 14px;
       text-align: center;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
+      font-size: 15px;
     }
-    .ok { background:#e8f5e9; color:#1b5e20; }
-    .err { background:#ffebee; color:#b71c1c; }
-    .warn { background:#fff3e0; color:#e65100; }
+    .ok { 
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      color: #1b5e20;
+      border: 1px solid #a5d6a7;
+    }
+    .err { 
+      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+      color: #b71c1c;
+      border: 1px solid #ef9a9a;
+    }
+    .warn { 
+      background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+      color: #e65100;
+      border: 1px solid #ffcc80;
+    }
 
     .offline-badge {
       background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
       color: white;
-      padding: 12px 20px;
-      border-radius: 25px;
-      font-size: 14px;
+      padding: 14px 24px;
+      border-radius: 30px;
+      font-size: 15px;
       font-weight: 600;
       text-align: center;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 12px rgba(238, 90, 111, 0.3);
+      margin-bottom: 18px;
+      box-shadow: 0 6px 20px rgba(238, 90, 111, 0.4);
       animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.8; }
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.02); opacity: 0.9; }
     }
 
     .install-prompt {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
       color: white;
-      padding: 20px;
-      border-radius: 16px;
+      padding: 24px;
+      border-radius: 20px;
       margin-bottom: 20px;
       text-align: center;
-      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+      box-shadow: 0 6px 25px rgba(205, 153, 52, 0.4);
     }
 
     .install-prompt h3 {
-      margin-bottom: 8px;
-      font-size: 20px;
+      margin-bottom: 10px;
+      font-size: 22px;
+    }
+
+    .install-prompt p {
+      margin-bottom: 16px;
+      opacity: 0.95;
     }
 
     .install-prompt button {
       background: white;
-      color: #667eea;
+      color: var(--gold);
       border: none;
-      padding: 12px 24px;
-      border-radius: 25px;
+      padding: 14px 28px;
+      border-radius: 30px;
       font-weight: 600;
       cursor: pointer;
-      margin: 5px;
+      margin: 6px;
       font-size: 15px;
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
     .install-prompt button:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Email Setup Prompt */
+    #emailSetup {
+      background: white;
+      padding: 32px;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      text-align: center;
+      border: 2px solid rgba(205, 153, 52, 0.2);
+      margin-bottom: 20px;
+    }
+
+    #emailSetup h3 {
+      color: var(--gold);
+      margin-bottom: 12px;
+      font-size: 22px;
+    }
+
+    #emailSetup p {
+      color: #666;
+      margin-bottom: 16px;
+    }
+
+    #emailSetup input {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid #e8e8e8;
+      border-radius: 14px;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    #emailSetup input:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 4px rgba(205, 153, 52, 0.1);
+    }
+
+    #emailSetup button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 17px;
+    }
+
+    .employee-badge {
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+      color: white;
+      padding: 16px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(205, 153, 52, 0.3);
+    }
+
+    .employee-badge h3 {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .employee-badge p {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .employee-badge button {
+      background: white;
+      color: var(--gold);
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+      cursor: pointer;
     }
 
     label {
       font-weight: 600;
-      margin-top: 16px;
+      margin-top: 18px;
       margin-bottom: 8px;
       display: block;
-      color: #333;
+      color: #444;
       font-size: 14px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
@@ -154,75 +255,92 @@
 
     select, input, textarea {
       width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      border: 2px solid #e0e0e0;
+      padding: 15px;
+      border-radius: 14px;
+      border: 2px solid #e8e8e8;
       font-size: 16px;
-      transition: border-color 0.3s, box-shadow 0.3s;
+      transition: all 0.3s;
+      background: #fafafa;
     }
 
     select:focus, input:focus, textarea:focus {
       outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(13, 115, 119, 0.1);
+      border-color: var(--gold);
+      box-shadow: 0 0 0 4px rgba(205, 153, 52, 0.1);
+      background: white;
+    }
+
+    select:disabled {
+      background: #f5f5f5;
+      color: #999;
+      cursor: not-allowed;
     }
 
     button {
       width: 100%;
-      padding: 16px;
-      margin-top: 16px;
+      padding: 18px;
+      margin-top: 18px;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       font-weight: 700;
       font-size: 17px;
       color: white;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.3s;
-      position: relative;
-      overflow: hidden;
+      transition: all 0.3s;
     }
 
     button:active {
-      transform: scale(0.98);
-    }
-
-    button:hover {
-      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      transform: scale(0.97);
     }
 
     .clockInBtn {
       background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
-      box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
+      box-shadow: 0 6px 20px rgba(46, 125, 50, 0.35);
+    }
+
+    .clockInBtn:hover {
+      box-shadow: 0 8px 25px rgba(46, 125, 50, 0.45);
+      transform: translateY(-2px);
     }
 
     .clockOutBtn {
       background: linear-gradient(135deg, #c62828 0%, #e53935 100%);
-      box-shadow: 0 4px 15px rgba(198, 40, 40, 0.3);
+      box-shadow: 0 6px 20px rgba(198, 40, 40, 0.35);
+    }
+
+    .clockOutBtn:hover {
+      box-shadow: 0 8px 25px rgba(198, 40, 40, 0.45);
+      transform: translateY(-2px);
     }
 
     .myTimesBtn {
-      background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
-      box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
+      background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%);
+      box-shadow: 0 6px 20px rgba(205, 153, 52, 0.35);
+    }
+
+    .myTimesBtn:hover {
+      box-shadow: 0 8px 25px rgba(205, 153, 52, 0.45);
+      transform: translateY(-2px);
     }
 
     .clientInfoBtn {
       background: none;
       border: none;
-      font-size: 22px;
+      font-size: 24px;
       cursor: pointer;
       position: absolute;
-      right: 14px;
+      right: 16px;
       top: 50%;
       transform: translateY(-50%);
-      color: var(--primary);
+      color: var(--gold);
       transition: transform 0.2s;
       width: auto;
-      padding: 4px;
+      padding: 6px;
       margin: 0;
     }
 
     .clientInfoBtn:hover {
-      transform: translateY(-50%) scale(1.2);
+      transform: translateY(-50%) scale(1.15);
     }
 
     .input-wrapper {
@@ -237,51 +355,57 @@
       justify-content: center;
       align-items: center;
       z-index: 999;
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(5px);
     }
 
     #clientPopup .popupCard {
       background: white;
-      padding: 24px;
+      padding: 28px;
       width: 90%;
-      max-width: 400px;
-      border-radius: 20px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-      animation: slideUp 0.3s ease-out;
+      max-width: 420px;
+      border-radius: 24px;
+      box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+      animation: slideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
     }
 
     @keyframes slideUp {
       from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(50px) scale(0.9);
       }
       to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
       }
     }
 
     #clientPopup h3 {
-      color: var(--primary);
+      color: var(--gold);
       margin-bottom: 16px;
+      font-size: 22px;
+    }
+
+    #clientPopup p {
+      color: #555;
+      line-height: 1.6;
     }
 
     .version-badge {
       text-align: center;
       font-size: 12px;
       color: #999;
-      margin-top: 20px;
+      margin-top: 24px;
+      padding: 8px;
     }
 
-    /* Loading animation */
     .loading {
       display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255,255,255,.3);
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(205, 153, 52, 0.3);
       border-radius: 50%;
-      border-top-color: white;
-      animation: spin 1s ease-in-out infinite;
+      border-top-color: var(--gold);
+      animation: spin 1s linear infinite;
     }
 
     @keyframes spin {
@@ -292,75 +416,96 @@
 <body>
   <!-- Header -->
   <div class="header">
-    <h1>🏥 SOMD Home Health</h1>
-    <p>GPS Time Clock System</p>
+    <h1>💛 SOMD Home Health</h1>
+    <p>Compassionate Care • Time Clock</p>
   </div>
 
   <div class="container">
-    <!-- Install Prompt -->
-    <div id="installPrompt" style="display:none;" class="install-prompt">
-      <h3>📱 Install App</h3>
-      <p>Add to home screen for quick access and offline use!</p>
-      <button onclick="installApp()">Install Now</button>
-      <button onclick="dismissInstall()">Maybe Later</button>
+    <!-- Email Setup (First Time Only) -->
+    <div id="emailSetup" style="display:none;">
+      <h3>👋 Welcome!</h3>
+      <p>Enter your work email to get started</p>
+      <p style="font-size:13px; color:#999;">You only need to do this once - it will remember you!</p>
+      <input type="email" id="emailInput" placeholder="your.email@gmail.com">
+      <button onclick="saveUserEmail()">💛 Continue</button>
     </div>
 
-    <!-- Offline Badge -->
-    <div id="offlineBadge" style="display:none;" class="offline-badge">
-      📴 Offline Mode - Data will sync when connected
-    </div>
-
-    <!-- Time Display -->
-    <div id="timeDisplay">--:--:--</div>
-    
-    <!-- Status -->
-    <div id="status" class="warn">
-      <span class="loading"></span>
-      Loading…
-    </div>
-
-    <!-- Main Card -->
-    <div class="card">
-      <label>👤 Employee</label>
-      <select id="employee"></select>
-
-      <label>🏠 Client</label>
-      <div class="input-wrapper">
-        <select id="client"></select>
-        <button class="clientInfoBtn" onclick="showClientInfo()">ℹ️</button>
+    <!-- Main App (After Email Setup) -->
+    <div id="mainApp" style="display:none;">
+      <!-- Install Prompt -->
+      <div id="installPrompt" style="display:none;" class="install-prompt">
+        <h3>📱 Install Our App</h3>
+        <p>Add to home screen for quick access and offline use!</p>
+        <button onclick="installApp()">💛 Install Now</button>
+        <button onclick="dismissInstall()">Maybe Later</button>
       </div>
 
-      <label>💼 Role (optional)</label>
-      <input id="role" placeholder="RN, LPN, CNA, Caregiver…">
+      <!-- Offline Badge -->
+      <div id="offlineBadge" style="display:none;" class="offline-badge">
+        📴 Offline Mode - Data will sync when connected
+      </div>
 
-      <label>🚗 Mileage for this visit</label>
-      <input id="mileage" type="number" min="0" step="0.1" placeholder="e.g. 12.5">
+      <!-- Employee Badge (Shows who's logged in) -->
+      <div class="employee-badge" id="employeeBadge">
+        <h3 id="employeeName">Loading...</h3>
+        <p id="employeeRole"></p>
+        <button onclick="changeEmployee()" style="background:white; color:var(--gold); border:none; padding:8px 16px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer;">
+          Not you? Switch employee
+        </button>
+      </div>
 
-      <label>📝 Note (optional)</label>
-      <textarea id="note" rows="2" placeholder="Any special notes about this visit..."></textarea>
+      <!-- Time Display -->
+      <div id="timeDisplay">--:--:--</div>
+      
+      <!-- Status -->
+      <div id="status" class="warn">
+        <span class="loading"></span>
+        Loading…
+      </div>
 
-      <button class="clockInBtn" onclick="submitClock('Clock In')">
-        ⏱️ Clock In
-      </button>
-      <button class="clockOutBtn" onclick="submitClock('Clock Out')">
-        🏁 Clock Out
-      </button>
-      <button class="myTimesBtn" onclick="window.location.href='my-times.html'">
-        📊 My Times
-      </button>
-    </div>
+      <!-- Main Card -->
+      <div class="card">
+        <!-- Employee is now auto-selected and hidden! -->
+        <input type="hidden" id="employee" />
 
-    <div class="version-badge">
-      v1.1.0 • SOMD Home Health
+        <label>🏠 Select Client</label>
+        <div class="input-wrapper">
+          <select id="client"></select>
+          <button class="clientInfoBtn" onclick="showClientInfo()">ℹ️</button>
+        </div>
+
+        <label>💼 Your Role (optional)</label>
+        <input id="role" placeholder="RN, LPN, CNA, Caregiver…">
+
+        <label>🚗 Miles Driven</label>
+        <input id="mileage" type="number" min="0" step="0.1" placeholder="Enter mileage (e.g. 12.5)">
+
+        <label>📝 Visit Notes (optional)</label>
+        <textarea id="note" rows="2" placeholder="Any notes about this visit..."></textarea>
+
+        <button class="clockInBtn" onclick="submitClock('Clock In')">
+          ⏱️ Clock In
+        </button>
+        <button class="clockOutBtn" onclick="submitClock('Clock Out')">
+          🏁 Clock Out
+        </button>
+        <button class="myTimesBtn" onclick="window.location.href='my-times.html'">
+          📊 View My Hours
+        </button>
+      </div>
+
+      <div class="version-badge">
+        v1.3.0 • SOMD Home Health • Caring for Our Community 💛
+      </div>
     </div>
   </div>
 
   <!-- CLIENT INFO POPUP -->
   <div id="clientPopup">
     <div class="popupCard">
-      <h3 id="clientInfoTitle"></h3>
+      <h3 id="clientInfoTitle">📍 Client Information</h3>
       <p id="clientInfoBody"></p>
-      <button onclick="closeClientInfo()" style="margin-top:16px;width:100%;padding:14px;border-radius:12px;border:none;background:var(--primary);color:white;font-weight:700;">
+      <button onclick="closeClientInfo()" style="margin-top:20px;width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);color:white;font-weight:700;box-shadow: 0 4px 12px rgba(205, 153, 52, 0.3);">
         Close
       </button>
     </div>
@@ -368,15 +513,107 @@
 
   <script src="app.js"></script>
   <script>
+    // ENHANCED: Auto-select employee based on email
+    let currentEmployee = null;
+
+    // Check if user has email saved
+    function checkUserSetup() {
+      const savedEmail = localStorage.getItem('userEmail');
+      
+      if (!savedEmail) {
+        // First time user - show email setup
+        document.getElementById('emailSetup').style.display = 'block';
+        document.getElementById('mainApp').style.display = 'none';
+      } else {
+        // Returning user - load their info
+        document.getElementById('emailSetup').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        loadUserEmployee(savedEmail);
+      }
+    }
+
+    // Save email and find matching employee
+    async function saveUserEmail() {
+      const input = document.getElementById('emailInput');
+      const email = input.value.trim().toLowerCase();
+      
+      if (!email || !email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      
+      localStorage.setItem('userEmail', email);
+      
+      // Hide setup, show app
+      document.getElementById('emailSetup').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      
+      // Load employee data
+      loadUserEmployee(email);
+    }
+
+    // Load employee info from email
+    async function loadUserEmployee(email) {
+      try {
+        // Wait for meta to load
+        if (!meta) {
+          await loadMeta();
+        }
+        
+        // Find employee by email
+        const employee = meta.employees.find(e => 
+          e.email.toLowerCase() === email.toLowerCase()
+        );
+        
+        if (employee) {
+          currentEmployee = employee;
+          
+          // Update badge
+          document.getElementById('employeeName').textContent = '👤 ' + employee.fullName;
+          document.getElementById('employeeRole').textContent = employee.role || 'Caregiver';
+          
+          // Set hidden employee field
+          document.getElementById('employee').value = employee.name;
+          
+          // Set default role
+          document.getElementById('role').value = employee.role || '';
+          
+          setStatus('👋 Welcome, ' + employee.name.split(' ')[0] + '! Ready to clock in.', 'ok');
+        } else {
+          setStatus('⚠️ Email not found in employee list. Contact your manager.', 'err');
+          document.getElementById('employeeName').textContent = '⚠️ Email Not Found';
+          document.getElementById('employeeRole').textContent = 'Contact your manager';
+        }
+      } catch (error) {
+        console.error('Error loading employee:', error);
+        setStatus('Error loading your info. Please refresh.', 'err');
+      }
+    }
+
+    // Allow changing employee (for shared devices)
+    function changeEmployee() {
+      if (confirm('Switch to a different employee? This will clear your saved email.')) {
+        localStorage.removeItem('userEmail');
+        currentEmployee = null;
+        document.getElementById('emailSetup').style.display = 'block';
+        document.getElementById('mainApp').style.display = 'none';
+        document.getElementById('emailInput').value = '';
+      }
+    }
+
+    // Initialize on load
+    document.addEventListener('DOMContentLoaded', () => {
+      checkUserSetup();
+    });
+
     // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
         .then(reg => {
-          console.log('Service Worker registered');
-          // Auto-check for updates
+          console.log('✅ Service Worker registered');
           reg.update();
         })
-        .catch(err => console.log('Service Worker registration failed:', err));
+        .catch(err => console.log('❌ Service Worker registration failed:', err));
     }
   </script>
 </body>
