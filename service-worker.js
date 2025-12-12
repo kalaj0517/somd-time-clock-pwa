@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1.5.1';
+const CACHE_VERSION = 'v1.6.1';
 const CACHE_NAME = `time-clock-${CACHE_VERSION}`;
 
 // Base path for GitHub Pages
