@@ -526,13 +526,13 @@ async function loadUserEmployee(email) {
     }
     
     // Try to find employee by email (check BOTH personal and work email)
+    const searchEmail = email.toLowerCase().trim();
     const employee = meta.employees.find(e => {
-      const personalEmail = (e.email || '').toLowerCase();
-      const workEmail = (e.workEmail || '').toLowerCase();
-      const searchEmail = email.toLowerCase();
-      
-      return personalEmail === searchEmail || workEmail === searchEmail;
-    });
+      const personalEmail = (e.email || '').toLowerCase().trim();
+      const workEmail = (e.workEmail || '').toLowerCase().trim();
+  
+  return personalEmail === searchEmail || workEmail === searchEmail;
+});
     
     if (employee) {
       currentEmployee = employee;
