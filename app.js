@@ -507,11 +507,14 @@ async function saveUserEmail() {
   loadUserEmployee(email);
 }
 
+// UPDATED: loadUserEmployee - Checks BOTH personal AND work email
+// Add this to app.js (replace the existing loadUserEmployee function)
+
 async function loadUserEmployee(email) {
   try {
     setStatus('🔍 Loading your employee info...', 'warn');
     
-    // Wait for meta to load if not loaded yet
+    // Wait for meta to load
     let attempts = 0;
     while (!meta && attempts < 10) {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -522,21 +525,25 @@ async function loadUserEmployee(email) {
       await loadMeta();
     }
     
-    const employee = meta.employees.find(e => 
-      e.email.toLowerCase() === email.toLowerCase()
-    );
+    // Try to find employee by email (check BOTH personal and work email)
+    const employee = meta.employees.find(e => {
+      const personalEmail = (e.email || '').toLowerCase();
+      const workEmail = (e.workEmail || '').toLowerCase();
+      const searchEmail = email.toLowerCase();
+      
+      return personalEmail === searchEmail || workEmail === searchEmail;
+    });
     
     if (employee) {
       currentEmployee = employee;
       
       document.getElementById('employeeName').textContent = '👤 ' + employee.fullName;
       document.getElementById('employeeRole').textContent = employee.role || 'Caregiver';
-      document.getElementById('employee').value = employee.name;
+      document.getElementById('employee').value = employee.name; // Short name
       document.getElementById('role').value = employee.role || '';
       
       setStatus(`👋 Welcome back, ${employee.name.split(' ')[0]}!`, 'ok');
       
-      // Show sync status
       showSyncStatus();
     } else {
       setStatus('⚠️ Email not found. Contact your manager.', 'err');
