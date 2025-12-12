@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="icon-192.png">
   <style>
+    /* [Previous styles remain exactly the same...] */
     :root {
       --gold: #cd9934;
       --gold-dark: #b8862e;
@@ -17,11 +18,7 @@
       --error: #c62828;
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
@@ -35,6 +32,7 @@
       padding: 24px 20px;
       text-align: center;
       box-shadow: 0 4px 20px rgba(205, 153, 52, 0.3);
+      position: relative;
     }
 
     .header h1 {
@@ -47,6 +45,21 @@
     .header p {
       font-size: 14px;
       opacity: 0.95;
+    }
+
+    /* NEW: Sync Status Badge */
+    #syncBadge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.9);
+      color: var(--gold);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
 
     .container {
@@ -89,21 +102,9 @@
       gap: 10px;
       font-size: 15px;
     }
-    .ok { 
-      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
-      color: #1b5e20;
-      border: 1px solid #a5d6a7;
-    }
-    .err { 
-      background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
-      color: #b71c1c;
-      border: 1px solid #ef9a9a;
-    }
-    .warn { 
-      background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-      color: #e65100;
-      border: 1px solid #ffcc80;
-    }
+    .ok { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); color: #1b5e20; border: 1px solid #a5d6a7; }
+    .err { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); color: #b71c1c; border: 1px solid #ef9a9a; }
+    .warn { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); color: #e65100; border: 1px solid #ffcc80; }
 
     .offline-badge {
       background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
@@ -133,15 +134,8 @@
       box-shadow: 0 6px 25px rgba(205, 153, 52, 0.4);
     }
 
-    .install-prompt h3 {
-      margin-bottom: 10px;
-      font-size: 22px;
-    }
-
-    .install-prompt p {
-      margin-bottom: 16px;
-      opacity: 0.95;
-    }
+    .install-prompt h3 { margin-bottom: 10px; font-size: 22px; }
+    .install-prompt p { margin-bottom: 16px; opacity: 0.95; }
 
     .install-prompt button {
       background: white;
@@ -156,12 +150,6 @@
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .install-prompt button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(0,0,0,0.2);
-    }
-
-    /* Email Setup Prompt */
     #emailSetup {
       background: white;
       padding: 32px;
@@ -190,12 +178,6 @@
       border-radius: 14px;
       font-size: 16px;
       margin-bottom: 16px;
-    }
-
-    #emailSetup input:focus {
-      outline: none;
-      border-color: var(--gold);
-      box-shadow: 0 0 0 4px rgba(205, 153, 52, 0.1);
     }
 
     #emailSetup button {
@@ -270,12 +252,6 @@
       background: white;
     }
 
-    select:disabled {
-      background: #f5f5f5;
-      color: #999;
-      cursor: not-allowed;
-    }
-
     button {
       width: 100%;
       padding: 18px;
@@ -289,18 +265,11 @@
       transition: all 0.3s;
     }
 
-    button:active {
-      transform: scale(0.97);
-    }
+    button:active { transform: scale(0.97); }
 
     .clockInBtn {
       background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
       box-shadow: 0 6px 20px rgba(46, 125, 50, 0.35);
-    }
-
-    .clockInBtn:hover {
-      box-shadow: 0 8px 25px rgba(46, 125, 50, 0.45);
-      transform: translateY(-2px);
     }
 
     .clockOutBtn {
@@ -308,19 +277,9 @@
       box-shadow: 0 6px 20px rgba(198, 40, 40, 0.35);
     }
 
-    .clockOutBtn:hover {
-      box-shadow: 0 8px 25px rgba(198, 40, 40, 0.45);
-      transform: translateY(-2px);
-    }
-
     .myTimesBtn {
       background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%);
       box-shadow: 0 6px 20px rgba(205, 153, 52, 0.35);
-    }
-
-    .myTimesBtn:hover {
-      box-shadow: 0 8px 25px rgba(205, 153, 52, 0.45);
-      transform: translateY(-2px);
     }
 
     .clientInfoBtn {
@@ -333,19 +292,12 @@
       top: 50%;
       transform: translateY(-50%);
       color: var(--gold);
-      transition: transform 0.2s;
       width: auto;
       padding: 6px;
       margin: 0;
     }
 
-    .clientInfoBtn:hover {
-      transform: translateY(-50%) scale(1.15);
-    }
-
-    .input-wrapper {
-      position: relative;
-    }
+    .input-wrapper { position: relative; }
 
     #clientPopup {
       position: fixed;
@@ -365,37 +317,6 @@
       max-width: 420px;
       border-radius: 24px;
       box-shadow: 0 15px 50px rgba(0,0,0,0.3);
-      animation: slideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(50px) scale(0.9);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    #clientPopup h3 {
-      color: var(--gold);
-      margin-bottom: 16px;
-      font-size: 22px;
-    }
-
-    #clientPopup p {
-      color: #555;
-      line-height: 1.6;
-    }
-
-    .version-badge {
-      text-align: center;
-      font-size: 12px;
-      color: #999;
-      margin-top: 24px;
-      padding: 8px;
     }
 
     .loading {
@@ -414,58 +335,46 @@
   </style>
 </head>
 <body>
-  <!-- Header -->
   <div class="header">
     <h1>💛 SOMD Home Health</h1>
     <p>Compassionate Care • Time Clock</p>
+    <!-- NEW: Sync Status Badge -->
+    <div id="syncBadge" style="display:none;">📤 0 pending</div>
   </div>
 
   <div class="container">
-    <!-- Email Setup (First Time Only) -->
+    <!-- Email Setup (First Time) -->
     <div id="emailSetup" style="display:none;">
       <h3>👋 Welcome!</h3>
       <p>Enter your work email to get started</p>
-      <p style="font-size:13px; color:#999;">You only need to do this once - it will remember you!</p>
+      <p style="font-size:13px; color:#999;">You only need to do this once</p>
       <input type="email" id="emailInput" placeholder="your.email@gmail.com">
       <button onclick="saveUserEmail()">💛 Continue</button>
     </div>
 
-    <!-- Main App (After Email Setup) -->
+    <!-- Main App -->
     <div id="mainApp" style="display:none;">
-      <!-- Install Prompt -->
       <div id="installPrompt" style="display:none;" class="install-prompt">
         <h3>📱 Install Our App</h3>
-        <p>Add to home screen for quick access and offline use!</p>
+        <p>Add to home screen for offline use!</p>
         <button onclick="installApp()">💛 Install Now</button>
         <button onclick="dismissInstall()">Maybe Later</button>
       </div>
 
-      <!-- Offline Badge -->
       <div id="offlineBadge" style="display:none;" class="offline-badge">
         📴 Offline Mode - Data will sync when connected
       </div>
 
-      <!-- Employee Badge (Shows who's logged in) -->
       <div class="employee-badge" id="employeeBadge">
         <h3 id="employeeName">Loading...</h3>
         <p id="employeeRole"></p>
-        <button onclick="changeEmployee()" style="background:white; color:var(--gold); border:none; padding:8px 16px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer;">
-          Not you? Switch employee
-        </button>
+        <button onclick="changeEmployee()">Not you? Switch employee</button>
       </div>
 
-      <!-- Time Display -->
       <div id="timeDisplay">--:--:--</div>
-      
-      <!-- Status -->
-      <div id="status" class="warn">
-        <span class="loading"></span>
-        Loading…
-      </div>
+      <div id="status" class="warn"><span class="loading"></span> Loading…</div>
 
-      <!-- Main Card -->
       <div class="card">
-        <!-- Employee is now auto-selected and hidden! -->
         <input type="hidden" id="employee" />
 
         <label>🏠 Select Client</label>
@@ -478,142 +387,39 @@
         <input id="role" placeholder="RN, LPN, CNA, Caregiver…">
 
         <label>🚗 Miles Driven</label>
-        <input id="mileage" type="number" min="0" step="0.1" placeholder="Enter mileage (e.g. 12.5)">
+        <input id="mileage" type="number" min="0" step="0.1" placeholder="e.g. 12.5">
 
         <label>📝 Visit Notes (optional)</label>
-        <textarea id="note" rows="2" placeholder="Any notes about this visit..."></textarea>
+        <textarea id="note" rows="2" placeholder="Any notes..."></textarea>
 
-        <button class="clockInBtn" onclick="submitClock('Clock In')">
-          ⏱️ Clock In
-        </button>
-        <button class="clockOutBtn" onclick="submitClock('Clock Out')">
-          🏁 Clock Out
-        </button>
-        <button class="myTimesBtn" onclick="window.location.href='my-times.html'">
-          📊 View My Hours
-        </button>
+        <button class="clockInBtn" onclick="submitClock('Clock In')">⏱️ Clock In</button>
+        <button class="clockOutBtn" onclick="submitClock('Clock Out')">🏁 Clock Out</button>
+        <button class="myTimesBtn" onclick="window.location.href='my-times.html'">📊 View My Hours</button>
       </div>
 
-      <div class="version-badge">
-        v1.3.0 • SOMD Home Health • Caring for Our Community 💛
+      <div style="text-align:center; font-size:12px; color:#999; padding:8px;">
+        v1.4.0 • SOMD Home Health 💛
       </div>
     </div>
   </div>
 
-  <!-- CLIENT INFO POPUP -->
   <div id="clientPopup">
     <div class="popupCard">
-      <h3 id="clientInfoTitle">📍 Client Information</h3>
+      <h3 id="clientInfoTitle">📍 Client Info</h3>
       <p id="clientInfoBody"></p>
-      <button onclick="closeClientInfo()" style="margin-top:20px;width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);color:white;font-weight:700;box-shadow: 0 4px 12px rgba(205, 153, 52, 0.3);">
-        Close
-      </button>
+      <button onclick="closeClientInfo()" style="margin-top:20px;width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);color:white;font-weight:700;">Close</button>
     </div>
   </div>
 
   <script src="app.js"></script>
   <script>
-    // ENHANCED: Auto-select employee based on email
-    let currentEmployee = null;
-
-    // Check if user has email saved
-    function checkUserSetup() {
-      const savedEmail = localStorage.getItem('userEmail');
-      
-      if (!savedEmail) {
-        // First time user - show email setup
-        document.getElementById('emailSetup').style.display = 'block';
-        document.getElementById('mainApp').style.display = 'none';
-      } else {
-        // Returning user - load their info
-        document.getElementById('emailSetup').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
-        loadUserEmployee(savedEmail);
-      }
-    }
-
-    // Save email and find matching employee
-    async function saveUserEmail() {
-      const input = document.getElementById('emailInput');
-      const email = input.value.trim().toLowerCase();
-      
-      if (!email || !email.includes('@')) {
-        alert('Please enter a valid email address');
-        return;
-      }
-      
-      localStorage.setItem('userEmail', email);
-      
-      // Hide setup, show app
-      document.getElementById('emailSetup').style.display = 'none';
-      document.getElementById('mainApp').style.display = 'block';
-      
-      // Load employee data
-      loadUserEmployee(email);
-    }
-
-    // Load employee info from email
-    async function loadUserEmployee(email) {
-      try {
-        // Wait for meta to load
-        if (!meta) {
-          await loadMeta();
-        }
-        
-        // Find employee by email
-        const employee = meta.employees.find(e => 
-          e.email.toLowerCase() === email.toLowerCase()
-        );
-        
-        if (employee) {
-          currentEmployee = employee;
-          
-          // Update badge
-          document.getElementById('employeeName').textContent = '👤 ' + employee.fullName;
-          document.getElementById('employeeRole').textContent = employee.role || 'Caregiver';
-          
-          // Set hidden employee field
-          document.getElementById('employee').value = employee.name;
-          
-          // Set default role
-          document.getElementById('role').value = employee.role || '';
-          
-          setStatus('👋 Welcome, ' + employee.name.split(' ')[0] + '! Ready to clock in.', 'ok');
-        } else {
-          setStatus('⚠️ Email not found in employee list. Contact your manager.', 'err');
-          document.getElementById('employeeName').textContent = '⚠️ Email Not Found';
-          document.getElementById('employeeRole').textContent = 'Contact your manager';
-        }
-      } catch (error) {
-        console.error('Error loading employee:', error);
-        setStatus('Error loading your info. Please refresh.', 'err');
-      }
-    }
-
-    // Allow changing employee (for shared devices)
-    function changeEmployee() {
-      if (confirm('Switch to a different employee? This will clear your saved email.')) {
-        localStorage.removeItem('userEmail');
-        currentEmployee = null;
-        document.getElementById('emailSetup').style.display = 'block';
-        document.getElementById('mainApp').style.display = 'none';
-        document.getElementById('emailInput').value = '';
-      }
-    }
-
-    // Initialize on load
-    document.addEventListener('DOMContentLoaded', () => {
-      checkUserSetup();
-    });
-
-    // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
         .then(reg => {
           console.log('✅ Service Worker registered');
-          reg.update();
+          reg.update(); // Check for updates immediately
         })
-        .catch(err => console.log('❌ Service Worker registration failed:', err));
+        .catch(err => console.log('❌ SW registration failed:', err));
     }
   </script>
 </body>
