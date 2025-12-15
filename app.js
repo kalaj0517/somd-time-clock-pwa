@@ -2,7 +2,7 @@
 // Works with dropdown employee selector
 // Fixes: timezone, duplicates, dropdown compatibility
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbx_jPi8sLBTdLyVEbIW_dzc86nLSlZHQ4ejqu5CTCaXCKC_R799xjvG2xo9eirBiQd5/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyQ_Q7Wi7XQAOnYbxZWRjCM2MlBdU3x0mFhgzOZuqX8ApEFJimHEvlQY1SF6s6oEtqH/exec';
 
 let lat = null, lng = null, meta = null;
 let deferredPrompt = null;
