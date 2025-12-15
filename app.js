@@ -1,23 +1,24 @@
-// BULLETPROOF APP.JS - PRODUCTION VERSION v1.4.0
-// Fixes: offline sync, duplicates, auto-refresh, aggressive retry
+// BULLETPROOF APP.JS - v1.6.0
+// Works with dropdown employee selector
+// Fixes: timezone, duplicates, dropdown compatibility
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyQ_Q7Wi7XQAOnYbxZWRjCM2MlBdU3x0mFhgzOZuqX8ApEFJimHEvlQY1SF6s6oEtqH/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx_jPi8sLBTdLyVEbIW_dzc86nLSlZHQ4ejqu5CTCaXCKC_R799xjvG2xo9eirBiQd5/exec';
 
 let lat = null, lng = null, meta = null;
 let deferredPrompt = null;
-let currentEmployee = null;
 let syncInProgress = false;
+
+// NOTE: currentEmployee is declared in index.html now, not here!
 
 // ===== AUTO-REFRESH EVERY 30 MINUTES =====
 setInterval(() => {
   console.log('🔄 Auto-refresh triggered (30 min)');
   if (navigator.onLine) {
-    loadMeta(); // Refresh employee/client data
-    syncPendingActions(); // Try to sync any pending items
+    loadMeta();
+    syncPendingActions();
   }
-}, 30 * 60 * 1000); // 30 minutes
+}, 30 * 60 * 1000);
 
-// Also refresh when app becomes visible again
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && navigator.onLine) {
     console.log('🔄 App visible again - refreshing data');
@@ -56,9 +57,8 @@ function updateOnlineStatus() {
     badge.style.display = navigator.onLine ? 'none' : 'block';
   }
   
-  // Try to sync when coming online
   if (navigator.onLine) {
-    setTimeout(syncPendingActions, 1000); // Wait 1 sec for connection to stabilize
+    setTimeout(syncPendingActions, 1000);
   }
 }
 
@@ -77,22 +77,19 @@ window.addEventListener('offline', () => {
 // ===== LOAD EMPLOYEES & CLIENTS =====
 async function loadMeta() {
   try {
-    // Try cache first for instant display
     const cached = localStorage.getItem('meta-cache');
     if (cached) {
       meta = JSON.parse(cached);
       populateDropdowns();
     }
 
-    // Fetch fresh if online
     if (navigator.onLine) {
-      const response = await fetch(`${API_URL}?action=getMeta&t=${Date.now()}`); // Cache buster
+      const response = await fetch(`${API_URL}?action=getMeta&t=${Date.now()}`);
       if (!response.ok) throw new Error('Failed to fetch meta');
       
       const data = await response.json();
       meta = data;
       localStorage.setItem('meta-cache', JSON.stringify(data));
-      localStorage.setItem('meta-cache-time', Date.now().toString());
       populateDropdowns();
       
       console.log('✅ Employee/client data refreshed');
@@ -102,8 +99,6 @@ async function loadMeta() {
     if (meta) {
       populateDropdowns();
       console.log('⚠️ Using cached data');
-    } else {
-      setStatus('Error loading data. Please check internet and refresh.', 'err');
     }
   }
 }
@@ -120,6 +115,23 @@ function populateDropdowns() {
     opt.textContent = c.name;
     cliSel.appendChild(opt);
   });
+  
+  // Also populate employee dropdown if it exists (first-time setup)
+  const empDropdown = document.getElementById('employeeDropdown');
+  if (empDropdown && meta.employees) {
+    empDropdown.innerHTML = '<option value="">-- Select your name --</option>';
+    
+    meta.employees.forEach(emp => {
+      const option = document.createElement('option');
+      option.value = emp.fullName;
+      option.textContent = emp.fullName;
+      option.dataset.email = emp.email;
+      option.dataset.workEmail = emp.workEmail || '';
+      option.dataset.role = emp.role || '';
+      option.dataset.shortName = emp.name;
+      empDropdown.appendChild(option);
+    });
+  }
 }
 
 // ===== GPS LOCATION =====
@@ -146,8 +158,8 @@ function getLoc() {
   );
 }
 
-// ===== DUPLICATE PREVENTION =====
-const recentClockIns = new Map(); // Track recent clock-ins
+// ===== DUPLICATE PREVENTION (Client-side) =====
+const recentClockIns = new Map();
 
 function isDuplicate(employeeName, clientName, action) {
   const key = `${employeeName}|${clientName}|${action}`;
@@ -155,7 +167,7 @@ function isDuplicate(employeeName, clientName, action) {
   
   if (lastTime) {
     const timeSince = Date.now() - lastTime;
-    if (timeSince < 10000) { // Within 10 seconds
+    if (timeSince < 10000) {
       console.log('⚠️ Duplicate detected - ignoring (within 10 sec)');
       return true;
     }
@@ -163,7 +175,6 @@ function isDuplicate(employeeName, clientName, action) {
   
   recentClockIns.set(key, Date.now());
   
-  // Clean up old entries (older than 1 minute)
   setTimeout(() => {
     recentClockIns.delete(key);
   }, 60000);
@@ -174,11 +185,12 @@ function isDuplicate(employeeName, clientName, action) {
 // ===== CLOCK IN/OUT =====
 async function submitClock(action) {
   const employeeName = document.getElementById('employee').value;
+  const employeeEmail = document.getElementById('employeeEmail')?.value || '';
   const cliSel = document.getElementById('client');
   const clientName = cliSel.value;
 
   if (!employeeName) {
-    setStatus('⚠️ Please set up your email first.', 'err');
+    setStatus('⚠️ Please set up your employee info first.', 'err');
     return;
   }
 
@@ -187,13 +199,12 @@ async function submitClock(action) {
     return;
   }
 
-  // DUPLICATE PREVENTION
   if (isDuplicate(employeeName, clientName, action)) {
-    setStatus(`⚠️ You just ${action.toLowerCase()}ed! Please wait 10 seconds before trying again.`, 'warn');
+    setStatus(`⚠️ You just ${action.toLowerCase()}ed! Please wait 10 seconds.`, 'warn');
     return;
   }
 
-  const role = document.getElementById('role').value || currentEmployee?.role || '';
+  const role = document.getElementById('role').value || '';
   const note = document.getElementById('note').value;
   const mileageVal = document.getElementById('mileage').value;
   const mileage = (action === 'Clock Out' && mileageVal !== '') ? 
@@ -201,7 +212,7 @@ async function submitClock(action) {
 
   const payload = {
     employeeName,
-    employeeEmail: localStorage.getItem('userEmail'),
+    employeeEmail,
     role,
     clientName,
     action,
@@ -210,16 +221,14 @@ async function submitClock(action) {
     note,
     mileage,
     timestamp: new Date().toISOString(),
-    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}` // Unique ID
+    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   };
 
   console.log('📝 Submitting clock action:', payload);
   setStatus(`📤 ${action}ing...`, 'warn');
 
-  // ALWAYS save to IndexedDB first (even if online)
   await saveToIndexedDB(payload);
 
-  // Try to send immediately if online
   if (navigator.onLine) {
     const success = await sendToServer(payload);
     
@@ -227,17 +236,14 @@ async function submitClock(action) {
       setStatus(`✅ ${action} successful!`, 'ok');
       await markAsSynced(payload.id);
       
-      // Clear form after successful clock out
       if (action === 'Clock Out') {
         document.getElementById('mileage').value = '';
         document.getElementById('note').value = '';
       }
       
-      // Show sync count
       showSyncStatus();
     } else {
       setStatus(`⚠️ ${action} saved offline - will sync automatically`, 'warn');
-      // Try again in 5 seconds
       setTimeout(() => syncPendingActions(), 5000);
     }
   } else {
@@ -253,6 +259,7 @@ async function sendToServer(payload, retryCount = 0) {
     const params = new URLSearchParams({
       action: 'clock',
       employeeName: payload.employeeName,
+      employeeEmail: payload.employeeEmail || '',
       role: payload.role || '',
       clientName: payload.clientName,
       clockAction: payload.action,
@@ -260,7 +267,7 @@ async function sendToServer(payload, retryCount = 0) {
       lng: payload.lng || '',
       note: payload.note || '',
       mileage: payload.mileage || '',
-      t: Date.now() // Cache buster
+      t: Date.now()
     });
 
     const url = `${API_URL}?${params.toString()}`;
@@ -281,7 +288,6 @@ async function sendToServer(payload, retryCount = 0) {
     } else {
       console.log('❌ Server rejected:', result.message);
       
-      // Retry if server error
       if (retryCount < maxRetries) {
         console.log(`🔄 Retrying in ${(retryCount + 1) * 2} seconds...`);
         await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
@@ -293,7 +299,6 @@ async function sendToServer(payload, retryCount = 0) {
   } catch (error) {
     console.error('❌ Error sending to server:', error);
     
-    // Retry on network errors
     if (retryCount < maxRetries && navigator.onLine) {
       console.log(`🔄 Retrying in ${(retryCount + 1) * 2} seconds...`);
       await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
@@ -304,7 +309,7 @@ async function sendToServer(payload, retryCount = 0) {
   }
 }
 
-// ===== INDEXEDDB - RELIABLE OFFLINE STORAGE =====
+// ===== INDEXEDDB =====
 function openDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('TimeClockDB', 2);
@@ -315,7 +320,6 @@ function openDB() {
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       
-      // Create or upgrade pending-actions store
       if (!db.objectStoreNames.contains('pending-actions')) {
         const store = db.createObjectStore('pending-actions', { keyPath: 'id' });
         store.createIndex('synced', 'synced');
@@ -331,10 +335,9 @@ async function saveToIndexedDB(data) {
     const tx = db.transaction('pending-actions', 'readwrite');
     const store = tx.objectStore('pending-actions');
     
-    // Check for duplicate IDs
     const existing = await store.get(data.id);
     if (existing) {
-      console.log('⚠️ Duplicate ID detected - skipping IndexedDB save');
+      console.log('⚠️ Duplicate ID - skipping IndexedDB save');
       return;
     }
     
@@ -390,8 +393,10 @@ async function syncPendingActions() {
     const db = await openDB();
     const tx = db.transaction('pending-actions', 'readonly');
     const store = tx.objectStore('pending-actions');
-    const index = store.index('synced');
-    const pending = await index.getAll(false); // Get all unsynced items
+    
+    // Get all records and filter for unsynced
+    const allRecords = await store.getAll();
+    const pending = allRecords.filter(r => !r.synced);
 
     console.log(`📦 Found ${pending.length} pending items to sync`);
 
@@ -404,7 +409,6 @@ async function syncPendingActions() {
     let failCount = 0;
 
     for (const action of pending) {
-      // Skip if too many retries
       if (action.retries && action.retries > 5) {
         console.log(`⚠️ Skipping ${action.id} - too many retries`);
         failCount++;
@@ -417,7 +421,6 @@ async function syncPendingActions() {
         await markAsSynced(action.id);
         successCount++;
       } else {
-        // Increment retry count
         const db2 = await openDB();
         const tx2 = db2.transaction('pending-actions', 'readwrite');
         const store2 = tx2.objectStore('pending-actions');
@@ -445,13 +448,12 @@ async function syncPendingActions() {
   }
 }
 
-// Try to sync every 2 minutes when online
 setInterval(() => {
   if (navigator.onLine && !syncInProgress) {
     console.log('⏰ Periodic sync check (2 min)');
     syncPendingActions();
   }
-}, 2 * 60 * 1000); // 2 minutes
+}, 2 * 60 * 1000);
 
 // ===== SHOW SYNC STATUS =====
 async function showSyncStatus() {
@@ -459,8 +461,9 @@ async function showSyncStatus() {
     const db = await openDB();
     const tx = db.transaction('pending-actions', 'readonly');
     const store = tx.objectStore('pending-actions');
-    const index = store.index('synced');
-    const pending = await index.getAll(false);
+    
+    const allRecords = await store.getAll();
+    const pending = allRecords.filter(r => !r.synced);
     
     const badge = document.getElementById('syncBadge');
     if (badge) {
@@ -473,100 +476,6 @@ async function showSyncStatus() {
     }
   } catch (error) {
     console.error('Error showing sync status:', error);
-  }
-}
-
-// ===== EMPLOYEE SETUP =====
-function checkUserSetup() {
-  const savedEmail = localStorage.getItem('userEmail');
-  
-  if (!savedEmail) {
-    document.getElementById('emailSetup').style.display = 'block';
-    document.getElementById('mainApp').style.display = 'none';
-  } else {
-    document.getElementById('emailSetup').style.display = 'none';
-    document.getElementById('mainApp').style.display = 'block';
-    loadUserEmployee(savedEmail);
-  }
-}
-
-async function saveUserEmail() {
-  const input = document.getElementById('emailInput');
-  const email = input.value.trim().toLowerCase();
-  
-  if (!email || !email.includes('@')) {
-    alert('Please enter a valid email address');
-    return;
-  }
-  
-  localStorage.setItem('userEmail', email);
-  
-  document.getElementById('emailSetup').style.display = 'none';
-  document.getElementById('mainApp').style.display = 'block';
-  
-  loadUserEmployee(email);
-}
-
-// UPDATED: loadUserEmployee - Checks BOTH personal AND work email
-// Add this to app.js (replace the existing loadUserEmployee function)
-
-async function loadUserEmployee(email) {
-  try {
-    setStatus('🔍 Loading your employee info...', 'warn');
-    
-    // Wait for meta to load
-    let attempts = 0;
-    while (!meta && attempts < 10) {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      attempts++;
-    }
-    
-    if (!meta) {
-      await loadMeta();
-    }
-    
-    // Try to find employee by email (check BOTH personal and work email)
-    const searchEmail = email.toLowerCase().trim();
-    const employee = meta.employees.find(e => {
-      const personalEmail = (e.email || '').toLowerCase().trim();
-      const workEmail = (e.workEmail || '').toLowerCase().trim();
-  
-  return personalEmail === searchEmail || workEmail === searchEmail;
-});
-    
-    if (employee) {
-      currentEmployee = employee;
-      
-      document.getElementById('employeeName').textContent = '👤 ' + employee.fullName;
-      document.getElementById('employeeRole').textContent = employee.role || 'Caregiver';
-      document.getElementById('employee').value = employee.name; // Short name
-      document.getElementById('role').value = employee.role || '';
-      
-      setStatus(`👋 Welcome back, ${employee.name.split(' ')[0]}!`, 'ok');
-      
-      showSyncStatus();
-    } else {
-      setStatus('⚠️ Email not found. Contact your manager.', 'err');
-      document.getElementById('employeeName').textContent = '⚠️ Email Not Found';
-      document.getElementById('employeeRole').textContent = 'Contact manager';
-    }
-  } catch (error) {
-    console.error('Error loading employee:', error);
-    setStatus('Error loading your info. Please refresh.', 'err');
-  }
-}
-
-function changeEmployee() {
-  if (confirm('Switch to a different employee? This will clear your saved email and any pending offline clock-ins.')) {
-    localStorage.removeItem('userEmail');
-    currentEmployee = null;
-    
-    // Optionally clear pending actions for this employee
-    // (You might want to keep them - your choice!)
-    
-    document.getElementById('emailSetup').style.display = 'block';
-    document.getElementById('mainApp').style.display = 'none';
-    document.getElementById('emailInput').value = '';
   }
 }
 
@@ -628,18 +537,13 @@ function dismissInstall() {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 App initializing...');
   updateOnlineStatus();
-  checkUserSetup();
   getLoc();
   loadMeta();
   
-  // Initial sync check
   setTimeout(syncPendingActions, 2000);
-  
-  // Show sync status
   setTimeout(showSyncStatus, 3000);
 });
 
-// Listen for service worker messages
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data.type === 'SYNC_NOW') {
@@ -649,7 +553,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Sync before page unload (if online)
 window.addEventListener('beforeunload', () => {
   if (navigator.onLine) {
     syncPendingActions();
