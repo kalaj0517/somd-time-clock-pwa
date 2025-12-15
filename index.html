@@ -8,14 +8,10 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="icon-192.png">
   <style>
-    /* [Previous styles remain exactly the same...] */
     :root {
       --gold: #cd9934;
       --gold-dark: #b8862e;
       --gold-light: #daa842;
-      --success: #2e7d32;
-      --warning: #f57c00;
-      --error: #c62828;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -47,7 +43,6 @@
       opacity: 0.95;
     }
 
-    /* NEW: Sync Status Badge */
     #syncBadge {
       position: absolute;
       top: 10px;
@@ -134,23 +129,7 @@
       box-shadow: 0 6px 25px rgba(205, 153, 52, 0.4);
     }
 
-    .install-prompt h3 { margin-bottom: 10px; font-size: 22px; }
-    .install-prompt p { margin-bottom: 16px; opacity: 0.95; }
-
-    .install-prompt button {
-      background: white;
-      color: var(--gold);
-      border: none;
-      padding: 14px 28px;
-      border-radius: 30px;
-      font-weight: 600;
-      cursor: pointer;
-      margin: 6px;
-      font-size: 15px;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    #emailSetup {
+    #employeeSetup {
       background: white;
       padding: 32px;
       border-radius: 20px;
@@ -160,27 +139,28 @@
       margin-bottom: 20px;
     }
 
-    #emailSetup h3 {
+    #employeeSetup h3 {
       color: var(--gold);
       margin-bottom: 12px;
       font-size: 22px;
     }
 
-    #emailSetup p {
+    #employeeSetup p {
       color: #666;
       margin-bottom: 16px;
     }
 
-    #emailSetup input {
+    #employeeSetup select {
       width: 100%;
       padding: 16px;
       border: 2px solid #e8e8e8;
       border-radius: 14px;
       font-size: 16px;
       margin-bottom: 16px;
+      background: #fafafa;
     }
 
-    #emailSetup button {
+    #employeeSetup button {
       width: 100%;
       padding: 16px;
       background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
@@ -202,16 +182,8 @@
       box-shadow: 0 4px 15px rgba(205, 153, 52, 0.3);
     }
 
-    .employee-badge h3 {
-      font-size: 18px;
-      margin-bottom: 4px;
-    }
-
-    .employee-badge p {
-      font-size: 13px;
-      opacity: 0.9;
-    }
-
+    .employee-badge h3 { font-size: 18px; margin-bottom: 4px; }
+    .employee-badge p { font-size: 13px; opacity: 0.9; }
     .employee-badge button {
       background: white;
       color: var(--gold);
@@ -338,18 +310,21 @@
   <div class="header">
     <h1>💛 SOMD Home Health</h1>
     <p>Compassionate Care • Time Clock</p>
-    <!-- NEW: Sync Status Badge -->
     <div id="syncBadge" style="display:none;">📤 0 pending</div>
   </div>
 
   <div class="container">
-    <!-- Email Setup (First Time) -->
-    <div id="emailSetup" style="display:none;">
+    <!-- Employee Setup with DROPDOWN (No keyboard needed!) -->
+    <div id="employeeSetup" style="display:none;">
       <h3>👋 Welcome!</h3>
-      <p>Enter your work email to get started</p>
+      <p>Select your name to get started</p>
       <p style="font-size:13px; color:#999;">You only need to do this once</p>
-      <input type="email" id="emailInput" placeholder="your.email@gmail.com">
-      <button onclick="saveUserEmail()">💛 Continue</button>
+      
+      <select id="employeeDropdown">
+        <option value="">-- Select your name --</option>
+      </select>
+      
+      <button onclick="saveEmployeeSelection()">💛 Continue</button>
     </div>
 
     <!-- Main App -->
@@ -365,7 +340,7 @@
         📴 Offline Mode - Data will sync when connected
       </div>
 
-      <div class="employee-badge" id="employeeBadge">
+      <div class="employee-badge">
         <h3 id="employeeName">Loading...</h3>
         <p id="employeeRole"></p>
         <button onclick="changeEmployee()">Not you? Switch employee</button>
@@ -376,6 +351,7 @@
 
       <div class="card">
         <input type="hidden" id="employee" />
+        <input type="hidden" id="employeeEmail" />
 
         <label>🏠 Select Client</label>
         <div class="input-wrapper">
@@ -398,7 +374,7 @@
       </div>
 
       <div style="text-align:center; font-size:12px; color:#999; padding:8px;">
-        v1.4.0 • SOMD Home Health 💛
+        v1.6.0 • SOMD Home Health 💛
       </div>
     </div>
   </div>
@@ -413,13 +389,166 @@
 
   <script src="app.js"></script>
   <script>
+    // ENHANCED: Dropdown employee selector (no typing = no keyboard issues!)
+    let currentEmployee = null;
+
+    function checkUserSetup() {
+      const savedEmployeeName = localStorage.getItem('selectedEmployee');
+      
+      if (!savedEmployeeName) {
+        // First time - show employee selector
+        document.getElementById('employeeSetup').style.display = 'block';
+        document.getElementById('mainApp').style.display = 'none';
+        
+        // Populate dropdown when meta loads
+        loadMetaThenPopulateSetup();
+      } else {
+        // Returning user
+        document.getElementById('employeeSetup').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        loadEmployeeByName(savedEmployeeName);
+      }
+    }
+
+    async function loadMetaThenPopulateSetup() {
+      try {
+        // Wait for meta to load
+        let attempts = 0;
+        while (!meta && attempts < 20) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          attempts++;
+        }
+        
+        if (!meta) {
+          await loadMeta();
+        }
+        
+        // Populate dropdown
+        const dropdown = document.getElementById('employeeDropdown');
+        dropdown.innerHTML = '<option value="">-- Select your name --</option>';
+        
+        meta.employees.forEach(emp => {
+          const option = document.createElement('option');
+          option.value = emp.fullName; // Use full name as value
+          option.textContent = emp.fullName;
+          option.dataset.email = emp.email;
+          option.dataset.workEmail = emp.workEmail || '';
+          option.dataset.role = emp.role || '';
+          option.dataset.shortName = emp.name;
+          dropdown.appendChild(option);
+        });
+        
+      } catch (error) {
+        console.error('Error loading employee list:', error);
+      }
+    }
+
+    function saveEmployeeSelection() {
+      const dropdown = document.getElementById('employeeDropdown');
+      const selectedOption = dropdown.options[dropdown.selectedIndex];
+      
+      if (!selectedOption || !selectedOption.value) {
+        alert('Please select your name from the list');
+        return;
+      }
+      
+      const employeeFullName = selectedOption.value;
+      
+      // Save selection
+      localStorage.setItem('selectedEmployee', employeeFullName);
+      
+      // Store employee data
+      const employeeData = {
+        fullName: employeeFullName,
+        shortName: selectedOption.dataset.shortName,
+        email: selectedOption.dataset.email,
+        workEmail: selectedOption.dataset.workEmail,
+        role: selectedOption.dataset.role
+      };
+      localStorage.setItem('employeeData', JSON.stringify(employeeData));
+      
+      // Hide setup, show app
+      document.getElementById('employeeSetup').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      
+      loadEmployeeByName(employeeFullName);
+    }
+
+    async function loadEmployeeByName(fullName) {
+      try {
+        setStatus('🔍 Loading your info...', 'warn');
+        
+        // Try to get from localStorage first
+        const stored = localStorage.getItem('employeeData');
+        let employeeData = null;
+        
+        if (stored) {
+          employeeData = JSON.parse(stored);
+        } else {
+          // Wait for meta
+          let attempts = 0;
+          while (!meta && attempts < 10) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            attempts++;
+          }
+          
+          if (!meta) await loadMeta();
+          
+          const employee = meta.employees.find(e => e.fullName === fullName);
+          if (employee) {
+            employeeData = {
+              fullName: employee.fullName,
+              shortName: employee.name,
+              email: employee.email,
+              workEmail: employee.workEmail || '',
+              role: employee.role
+            };
+            localStorage.setItem('employeeData', JSON.stringify(employeeData));
+          }
+        }
+        
+        if (employeeData) {
+          currentEmployee = employeeData;
+          
+          document.getElementById('employeeName').textContent = '👤 ' + employeeData.fullName;
+          document.getElementById('employeeRole').textContent = employeeData.role || 'Caregiver';
+          document.getElementById('employee').value = employeeData.shortName;
+          document.getElementById('employeeEmail').value = employeeData.email;
+          document.getElementById('role').value = employeeData.role || '';
+          
+          setStatus(`👋 Welcome back, ${employeeData.fullName.split(' ')[0]}!`, 'ok');
+          showSyncStatus();
+        } else {
+          setStatus('⚠️ Employee not found. Please switch employee.', 'err');
+        }
+      } catch (error) {
+        console.error('Error loading employee:', error);
+        setStatus('Error loading your info. Please refresh.', 'err');
+      }
+    }
+
+    function changeEmployee() {
+      if (confirm('Switch to a different employee? This will clear your saved selection.')) {
+        localStorage.removeItem('selectedEmployee');
+        localStorage.removeItem('employeeData');
+        currentEmployee = null;
+        document.getElementById('employeeSetup').style.display = 'block';
+        document.getElementById('mainApp').style.display = 'none';
+        loadMetaThenPopulateSetup();
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      checkUserSetup();
+    });
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
         .then(reg => {
           console.log('✅ Service Worker registered');
-          reg.update(); // Check for updates immediately
+          reg.update();
         })
-        .catch(err => console.log('❌ SW registration failed:', err));
+        .catch(err => console.log('❌ SW failed:', err));
     }
   </script>
 </body>
