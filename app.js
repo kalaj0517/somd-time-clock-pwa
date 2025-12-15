@@ -183,6 +183,31 @@ function isDuplicate(employeeName, clientName, action) {
 }
 
 // ===== CLOCK IN/OUT =====
+// ENHANCED CLOCK-IN WITH OPEN SESSION DETECTION
+// Add these functions to your app.js
+
+// NEW: Check if employee has open session before clocking in
+async function checkForOpenSession(employeeName) {
+  try {
+    const params = new URLSearchParams({
+      action: 'checkOpenSession',
+      employeeName: employeeName,
+      t: Date.now()
+    });
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    if (!response.ok) return null;
+    
+    const result = await response.json();
+    return result.openSession || null;
+    
+  } catch (error) {
+    console.error('Error checking open session:', error);
+    return null;
+  }
+}
+
+// UPDATED: submitClock with open session handling
 async function submitClock(action) {
   const employeeName = document.getElementById('employee').value;
   const employeeEmail = document.getElementById('employeeEmail')?.value || '';
@@ -204,13 +229,62 @@ async function submitClock(action) {
     return;
   }
 
+  // ✅ NEW: Check for open session before clock in
+  if (action === 'Clock In') {
+    setStatus('🔍 Checking for open sessions...', 'warn');
+    const openSession = await checkForOpenSession(employeeName);
+    
+    if (openSession) {
+      // Show warning dialog
+      const clockInTime = new Date(openSession.clockIn);
+      const timeAgo = Math.round((Date.now() - clockInTime.getTime()) / (1000 * 60 * 60)); // hours
+      
+      const message = `⚠️ You're still clocked in at ${openSession.client}!\n\n` +
+                     `Clock-in time: ${clockInTime.toLocaleString()}\n` +
+                     `(${timeAgo} hours ago)\n\n` +
+                     `What time did you leave ${openSession.client}?\n\n` +
+                     `Enter the time (e.g., "2:30 PM" or "14:30") or leave blank to use current time:`;
+      
+      const userTime = prompt(message, clockInTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+      
+      if (userTime === null) {
+        // User cancelled
+        setStatus('Clock-in cancelled. Please clock out of ' + openSession.client + ' first.', 'warn');
+        return;
+      }
+      
+      // Parse the time they entered
+      let previousClockOut = null;
+      if (userTime && userTime.trim() !== '') {
+        previousClockOut = parseTimeInput(userTime, clockInTime);
+      }
+      
+      // Add to payload for backend processing
+      payload = {
+        ...getClockPayload(action, employeeName, employeeEmail, clientName),
+        previousClockOut: previousClockOut ? previousClockOut.toISOString() : null,
+        autoClockOutClient: openSession.client
+      };
+      
+      await processClockAction(payload, action);
+      return;
+    }
+  }
+
+  // Normal clock in/out (no open session)
+  const payload = getClockPayload(action, employeeName, employeeEmail, clientName);
+  await processClockAction(payload, action);
+}
+
+// Helper: Build clock payload
+function getClockPayload(action, employeeName, employeeEmail, clientName) {
   const role = document.getElementById('role').value || '';
   const note = document.getElementById('note').value;
   const mileageVal = document.getElementById('mileage').value;
   const mileage = (action === 'Clock Out' && mileageVal !== '') ? 
     parseFloat(mileageVal) : null;
 
-  const payload = {
+  return {
     employeeName,
     employeeEmail,
     role,
@@ -223,8 +297,54 @@ async function submitClock(action) {
     timestamp: new Date().toISOString(),
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   };
+}
 
-  console.log('📝 Submitting clock action:', payload);
+// Helper: Parse time input from user
+function parseTimeInput(timeStr, referenceDate) {
+  try {
+    // Handle formats like "2:30 PM", "14:30", "2:30"
+    const ref = new Date(referenceDate);
+    
+    // Try parsing with different formats
+    let hours, minutes;
+    
+    if (timeStr.toLowerCase().includes('pm') || timeStr.toLowerCase().includes('am')) {
+      // 12-hour format
+      const isPM = timeStr.toLowerCase().includes('pm');
+      const cleanTime = timeStr.replace(/[apm\s]/gi, '');
+      const parts = cleanTime.split(':');
+      hours = parseInt(parts[0]);
+      minutes = parts[1] ? parseInt(parts[1]) : 0;
+      
+      if (isPM && hours !== 12) hours += 12;
+      if (!isPM && hours === 12) hours = 0;
+      
+    } else {
+      // 24-hour format or just hours
+      const parts = timeStr.split(':');
+      hours = parseInt(parts[0]);
+      minutes = parts[1] ? parseInt(parts[1]) : 0;
+    }
+    
+    const result = new Date(ref);
+    result.setHours(hours, minutes, 0, 0);
+    
+    // If result is in future, assume it was yesterday
+    if (result > new Date()) {
+      result.setDate(result.getDate() - 1);
+    }
+    
+    return result;
+    
+  } catch (error) {
+    console.error('Error parsing time:', error);
+    return null;
+  }
+}
+
+// Process the clock action
+async function processClockAction(payload, action) {
+  console.log('📝 Processing clock action:', payload);
   setStatus(`📤 ${action}ing...`, 'warn');
 
   await saveToIndexedDB(payload);
