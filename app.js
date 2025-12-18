@@ -1,31 +1,36 @@
-// BULLETPROOF APP.JS - v1.6.0
-// Works with dropdown employee selector
-// Fixes: timezone, duplicates, dropdown compatibility
+// SUPER AGGRESSIVE SYNC - v1.9.0
+// Manual sync button + 30-second polling + better feedback
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbyQ_Q7Wi7XQAOnYbxZWRjCM2MlBdU3x0mFhgzOZuqX8ApEFJimHEvlQY1SF6s6oEtqH/exec';
 
 let lat = null, lng = null, meta = null;
 let deferredPrompt = null;
 let syncInProgress = false;
+let lastSyncAttempt = 0;
 
-// NOTE: currentEmployee is declared in index.html now, not here!
-
-// ===== AUTO-REFRESH EVERY 30 MINUTES =====
+// ===== SUPER AGGRESSIVE AUTO-SYNC (30 seconds!) =====
 setInterval(() => {
-  console.log('🔄 Auto-refresh triggered (30 min)');
-  if (navigator.onLine) {
-    loadMeta();
+  if (navigator.onLine && !syncInProgress) {
+    console.log('⏰ Auto-sync check (30 sec)');
     syncPendingActions();
   }
-}, 30 * 60 * 1000);
+}, 30 * 1000); // 30 seconds!
 
+// Also sync when visible
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && navigator.onLine) {
-    console.log('🔄 App visible again - refreshing data');
-    loadMeta();
+    console.log('👁️ App visible - syncing');
     syncPendingActions();
   }
 });
+
+// Auto-refresh meta every 30 min
+setInterval(() => {
+  if (navigator.onLine) {
+    console.log('🔄 Auto-refresh meta (30 min)');
+    loadMeta();
+  }
+}, 30 * 60 * 1000);
 
 // ===== CLOCK DISPLAY =====
 function updateClock() {
@@ -65,7 +70,7 @@ function updateOnlineStatus() {
 window.addEventListener('online', () => {
   console.log('📶 Connection restored');
   updateOnlineStatus();
-  setStatus('📶 Connection restored - syncing data...', 'warn');
+  setStatus('📶 Connection restored - syncing...', 'warn');
   syncPendingActions();
 });
 
@@ -98,7 +103,6 @@ async function loadMeta() {
     console.error('Error loading meta:', error);
     if (meta) {
       populateDropdowns();
-      console.log('⚠️ Using cached data');
     }
   }
 }
@@ -108,7 +112,6 @@ function populateDropdowns() {
   if (!cliSel) return;
 
   cliSel.innerHTML = '<option value="">Select client...</option>';
-
   (meta.clients || []).forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.name;
@@ -116,11 +119,9 @@ function populateDropdowns() {
     cliSel.appendChild(opt);
   });
   
-  // Also populate employee dropdown if it exists (first-time setup)
   const empDropdown = document.getElementById('employeeDropdown');
   if (empDropdown && meta.employees) {
     empDropdown.innerHTML = '<option value="">-- Select your name --</option>';
-    
     meta.employees.forEach(emp => {
       const option = document.createElement('option');
       option.value = emp.fullName;
@@ -134,51 +135,42 @@ function populateDropdowns() {
   }
 }
 
-// ===== GPS LOCATION =====
+// ===== GPS =====
 function getLoc() {
   if (!navigator.geolocation) {
-    setStatus('GPS unavailable on this device.', 'err');
+    setStatus('GPS unavailable.', 'err');
     return;
   }
   
-  setStatus('📍 Getting your location...', 'warn');
+  setStatus('📍 Getting location...', 'warn');
   
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       lat = pos.coords.latitude;
       lng = pos.coords.longitude;
       setStatus(`✅ GPS OK (${lat.toFixed(5)}, ${lng.toFixed(5)})`, 'ok');
-      console.log('📍 GPS acquired:', lat, lng);
     },
     (error) => {
       console.error('GPS error:', error);
-      setStatus('⚠️ GPS unavailable. Enable location and refresh.', 'err');
+      setStatus('⚠️ GPS unavailable. Enable location.', 'err');
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
 }
 
-// ===== DUPLICATE PREVENTION (Client-side) =====
+// ===== DUPLICATE PREVENTION =====
 const recentClockIns = new Map();
 
 function isDuplicate(employeeName, clientName, action) {
   const key = `${employeeName}|${clientName}|${action}`;
   const lastTime = recentClockIns.get(key);
   
-  if (lastTime) {
-    const timeSince = Date.now() - lastTime;
-    if (timeSince < 10000) {
-      console.log('⚠️ Duplicate detected - ignoring (within 10 sec)');
-      return true;
-    }
+  if (lastTime && (Date.now() - lastTime) < 10000) {
+    return true;
   }
   
   recentClockIns.set(key, Date.now());
-  
-  setTimeout(() => {
-    recentClockIns.delete(key);
-  }, 60000);
-  
+  setTimeout(() => recentClockIns.delete(key), 60000);
   return false;
 }
 
@@ -200,15 +192,41 @@ async function submitClock(action) {
   }
 
   if (isDuplicate(employeeName, clientName, action)) {
-    setStatus(`⚠️ You just ${action.toLowerCase()}ed! Please wait 10 seconds.`, 'warn');
+    setStatus(`⚠️ You just ${action.toLowerCase()}ed! Wait 10 seconds.`, 'warn');
     return;
+  }
+
+  // Check for open session before clock-in
+  if (action === 'Clock In' && navigator.onLine) {
+    try {
+      const openSession = await checkForOpenSession(employeeName);
+      if (openSession) {
+        const clockInTime = new Date(openSession.clockIn);
+        const hoursAgo = Math.round((Date.now() - clockInTime.getTime()) / (1000 * 60 * 60));
+        
+        const userTime = prompt(
+          `⚠️ You're still clocked in at ${openSession.client}!\n\n` +
+          `Clock-in time: ${clockInTime.toLocaleString()}\n` +
+          `(${hoursAgo} hours ago)\n\n` +
+          `What time did you leave ${openSession.client}?\n` +
+          `Enter time (e.g., "12:30 PM") or leave blank:`,
+          clockInTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        );
+        
+        if (userTime === null) {
+          setStatus('Clock-in cancelled.', 'warn');
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking open session:', error);
+    }
   }
 
   const role = document.getElementById('role').value || '';
   const note = document.getElementById('note').value;
   const mileageVal = document.getElementById('mileage').value;
-  const mileage = (action === 'Clock Out' && mileageVal !== '') ? 
-    parseFloat(mileageVal) : null;
+  const mileage = (action === 'Clock Out' && mileageVal !== '') ? parseFloat(mileageVal) : null;
 
   const payload = {
     employeeName,
@@ -224,9 +242,10 @@ async function submitClock(action) {
     id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
   };
 
-  console.log('📝 Submitting clock action:', payload);
+  console.log('📝 Submitting:', payload);
   setStatus(`📤 ${action}ing...`, 'warn');
 
+  // ALWAYS save to IndexedDB first
   await saveToIndexedDB(payload);
 
   if (navigator.onLine) {
@@ -240,20 +259,39 @@ async function submitClock(action) {
         document.getElementById('mileage').value = '';
         document.getElementById('note').value = '';
       }
-      
-      showSyncStatus();
     } else {
-      setStatus(`⚠️ ${action} saved offline - will sync automatically`, 'warn');
-      setTimeout(() => syncPendingActions(), 5000);
+      setStatus(`⚠️ Saved offline - tap SYNC NOW when you have service!`, 'warn');
     }
   } else {
-    setStatus(`📴 ${action} saved offline - will sync when connected`, 'warn');
+    setStatus(`📴 Saved offline - tap SYNC NOW when connected!`, 'warn');
+  }
+  
+  await showSyncStatus();
+}
+
+// ===== CHECK FOR OPEN SESSION =====
+async function checkForOpenSession(employeeName) {
+  try {
+    const params = new URLSearchParams({
+      action: 'checkOpenSession',
+      employeeName: employeeName,
+      t: Date.now()
+    });
+    
+    const response = await fetch(`${API_URL}?${params.toString()}`);
+    if (!response.ok) return null;
+    
+    const result = await response.json();
+    return result.openSession || null;
+  } catch (error) {
+    console.error('Error checking open session:', error);
+    return null;
   }
 }
 
-// ===== SEND TO SERVER WITH RETRY =====
+// ===== SEND TO SERVER (10 retries!) =====
 async function sendToServer(payload, retryCount = 0) {
-  const maxRetries = 3;
+  const maxRetries = 10; // Increased from 3!
   
   try {
     const params = new URLSearchParams({
@@ -271,37 +309,49 @@ async function sendToServer(payload, retryCount = 0) {
     });
 
     const url = `${API_URL}?${params.toString()}`;
-    console.log('📤 Sending to server (attempt ' + (retryCount + 1) + ')');
+    console.log(`📤 Attempt ${retryCount + 1}/${maxRetries}`);
     
-    const response = await fetch(url);
+    const response = await fetch(url, { 
+      method: 'GET',
+      cache: 'no-cache'
+    });
     
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     
     const result = await response.json();
-    console.log('📥 Server response:', result);
+    console.log('📥 Response:', result);
     
     if (result.ok) {
-      console.log('✅ Successfully sent to server');
+      console.log('✅ Sent successfully!');
       return true;
     } else {
-      console.log('❌ Server rejected:', result.message);
+      console.log('❌ Rejected:', result.message);
       
+      // Don't retry if it's a business logic error (duplicate, geofence)
+      if (result.message.includes('just clocked') || 
+          result.message.includes('Outside geofence') ||
+          result.message.includes('Wait 1 minute')) {
+        console.log('⚠️ Business logic error - not retrying');
+        return false;
+      }
+      
+      // Retry for other errors
       if (retryCount < maxRetries) {
-        console.log(`🔄 Retrying in ${(retryCount + 1) * 2} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+        const delay = Math.min((retryCount + 1) * 2000, 10000); // Max 10 sec delay
+        console.log(`🔄 Retry in ${delay/1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
         return sendToServer(payload, retryCount + 1);
       }
       
       return false;
     }
   } catch (error) {
-    console.error('❌ Error sending to server:', error);
+    console.error('❌ Error:', error);
     
     if (retryCount < maxRetries && navigator.onLine) {
-      console.log(`🔄 Retrying in ${(retryCount + 1) * 2} seconds...`);
-      await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+      const delay = Math.min((retryCount + 1) * 2000, 10000);
+      console.log(`🔄 Retry in ${delay/1000}s...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
       return sendToServer(payload, retryCount + 1);
     }
     
@@ -313,13 +363,10 @@ async function sendToServer(payload, retryCount = 0) {
 function openDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('TimeClockDB', 2);
-    
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
-    
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
-      
       if (!db.objectStoreNames.contains('pending-actions')) {
         const store = db.createObjectStore('pending-actions', { keyPath: 'id' });
         store.createIndex('synced', 'synced');
@@ -337,19 +384,24 @@ async function saveToIndexedDB(data) {
     
     const existing = await store.get(data.id);
     if (existing) {
-      console.log('⚠️ Duplicate ID - skipping IndexedDB save');
-      return;
+      console.log('⚠️ Duplicate ID - updating instead');
+      await store.put({
+        ...data,
+        synced: false,
+        savedAt: Date.now(),
+        retries: 0
+      });
+    } else {
+      await store.add({
+        ...data,
+        synced: false,
+        savedAt: Date.now(),
+        retries: 0
+      });
     }
     
-    await store.add({
-      ...data,
-      synced: false,
-      savedAt: Date.now(),
-      retries: 0
-    });
-    
     console.log('💾 Saved to IndexedDB:', data.id);
-    showSyncStatus();
+    await showSyncStatus();
   } catch (error) {
     console.error('IndexedDB save error:', error);
   }
@@ -367,26 +419,53 @@ async function markAsSynced(id) {
       record.syncedAt = Date.now();
       await store.put(record);
       console.log('✅ Marked as synced:', id);
-      showSyncStatus();
+      await showSyncStatus();
     }
   } catch (error) {
-    console.error('Error marking as synced:', error);
+    console.error('Error marking synced:', error);
   }
 }
 
-// ===== AGGRESSIVE SYNC SYSTEM =====
+// ===== MANUAL SYNC FUNCTION =====
+async function manualSync() {
+  const btn = document.getElementById('manualSyncBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ Syncing...';
+  }
+  
+  setStatus('🔄 Starting manual sync...', 'warn');
+  
+  await syncPendingActions();
+  
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = '🔄 SYNC NOW';
+  }
+}
+
+// ===== AGGRESSIVE SYNC =====
 async function syncPendingActions() {
   if (syncInProgress) {
-    console.log('⏭️ Sync already in progress - skipping');
+    console.log('⏭️ Sync in progress - skipping');
     return;
   }
   
   if (!navigator.onLine) {
     console.log('📴 Offline - skipping sync');
+    setStatus('📴 No internet connection', 'warn');
+    return;
+  }
+
+  // Don't spam sync attempts
+  const timeSinceLastSync = Date.now() - lastSyncAttempt;
+  if (timeSinceLastSync < 5000) {
+    console.log('⏭️ Too soon since last sync - waiting');
     return;
   }
 
   syncInProgress = true;
+  lastSyncAttempt = Date.now();
   console.log('🔄 Starting sync...');
 
   try {
@@ -394,27 +473,33 @@ async function syncPendingActions() {
     const tx = db.transaction('pending-actions', 'readonly');
     const store = tx.objectStore('pending-actions');
     
-    // Get all records and filter for unsynced
     const allRecords = await new Promise((resolve, reject) => {
       const request = store.getAll();
       request.onsuccess = () => resolve(request.result || []);
       request.onerror = () => reject(request.error);
     });
+    
     const pending = Array.isArray(allRecords) ? allRecords.filter(r => !r.synced) : [];
 
-    console.log(`📦 Found ${pending.length} pending items to sync`);
+    console.log(`📦 Found ${pending.length} pending items`);
 
     if (pending.length === 0) {
       syncInProgress = false;
       return;
     }
 
+    // Show which items are pending
+    pending.forEach((item, idx) => {
+      console.log(`  ${idx + 1}. ${item.action} at ${item.clientName} (${item.retries || 0} retries)`);
+    });
+
     let successCount = 0;
     let failCount = 0;
 
     for (const action of pending) {
-      if (action.retries && action.retries > 5) {
-        console.log(`⚠️ Skipping ${action.id} - too many retries`);
+      // Skip if too many retries
+      if (action.retries && action.retries > 10) {
+        console.log(`⚠️ Skipping ${action.id} - too many retries (${action.retries})`);
         failCount++;
         continue;
       }
@@ -425,6 +510,7 @@ async function syncPendingActions() {
         await markAsSynced(action.id);
         successCount++;
       } else {
+        // Increment retry count
         const db2 = await openDB();
         const tx2 = db2.transaction('pending-actions', 'readwrite');
         const store2 = tx2.objectStore('pending-actions');
@@ -440,24 +526,20 @@ async function syncPendingActions() {
     console.log(`✅ Sync complete: ${successCount} success, ${failCount} failed`);
     
     if (successCount > 0) {
-      setStatus(`✅ Synced ${successCount} clock-in(s) successfully!`, 'ok');
+      setStatus(`✅ Synced ${successCount} item(s)! ${failCount > 0 ? `(${failCount} still pending)` : ''}`, 'ok');
+    } else if (failCount > 0) {
+      setStatus(`⚠️ ${failCount} item(s) failed to sync - tap SYNC NOW to retry`, 'warn');
     }
     
-    showSyncStatus();
+    await showSyncStatus();
     
   } catch (error) {
     console.error('❌ Sync error:', error);
+    setStatus('❌ Sync error - tap SYNC NOW to retry', 'err');
   } finally {
     syncInProgress = false;
   }
 }
-
-setInterval(() => {
-  if (navigator.onLine && !syncInProgress) {
-    console.log('⏰ Periodic sync check (2 min)');
-    syncPendingActions();
-  }
-}, 2 * 60 * 1000);
 
 // ===== SHOW SYNC STATUS =====
 async function showSyncStatus() {
@@ -471,23 +553,37 @@ async function showSyncStatus() {
       request.onsuccess = () => resolve(request.result || []);
       request.onerror = () => reject(request.error);
     });
+    
     const pending = Array.isArray(allRecords) ? allRecords.filter(r => !r.synced) : [];
     
     const badge = document.getElementById('syncBadge');
-    if (badge) {
-      if (pending.length > 0) {
+    const manualBtn = document.getElementById('manualSyncBtn');
+    
+    if (pending.length > 0) {
+      if (badge) {
         badge.textContent = `📤 ${pending.length} pending`;
         badge.style.display = 'block';
-      } else {
-        badge.style.display = 'none';
       }
+      if (manualBtn) {
+        manualBtn.style.display = 'block';
+      }
+      
+      // Show persistent warning if items are old
+      const oldestItem = pending[0];
+      const age = Date.now() - (oldestItem.savedAt || Date.now());
+      if (age > 5 * 60 * 1000) { // Older than 5 minutes
+        setStatus(`⚠️ ${pending.length} clock-in(s) waiting to sync! Tap SYNC NOW!`, 'warn');
+      }
+    } else {
+      if (badge) badge.style.display = 'none';
+      if (manualBtn) manualBtn.style.display = 'none';
     }
   } catch (error) {
     console.error('Error showing sync status:', error);
   }
 }
 
-// ===== CLIENT INFO POPUP =====
+// ===== CLIENT INFO =====
 function showClientInfo() {
   const cliSel = document.getElementById('client');
   const clientName = cliSel.value;
@@ -513,9 +609,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
   const prompt = document.getElementById('installPrompt');
-  if (prompt) {
-    prompt.style.display = 'block';
-  }
+  if (prompt) prompt.style.display = 'block';
 });
 
 function installApp() {
@@ -523,22 +617,18 @@ function installApp() {
     deferredPrompt.prompt();
     deferredPrompt.userChoice.then((result) => {
       if (result.outcome === 'accepted') {
-        console.log('✅ App installed!');
+        console.log('✅ Installed!');
       }
       deferredPrompt = null;
       const prompt = document.getElementById('installPrompt');
-      if (prompt) {
-        prompt.style.display = 'none';
-      }
+      if (prompt) prompt.style.display = 'none';
     });
   }
 }
 
 function dismissInstall() {
   const prompt = document.getElementById('installPrompt');
-  if (prompt) {
-    prompt.style.display = 'none';
-  }
+  if (prompt) prompt.style.display = 'none';
 }
 
 // ===== INITIALIZE =====
@@ -550,12 +640,14 @@ document.addEventListener('DOMContentLoaded', () => {
   
   setTimeout(syncPendingActions, 2000);
   setTimeout(showSyncStatus, 3000);
+  
+  // Check sync status frequently
+  setInterval(showSyncStatus, 10000); // Every 10 seconds
 });
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data.type === 'SYNC_NOW') {
-      console.log('📨 Service Worker requested sync');
       syncPendingActions();
     }
   });
