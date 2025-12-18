@@ -17,7 +17,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #fafafa;
       min-height: 100vh;
     }
@@ -35,7 +35,6 @@
       font-size: 26px;
       font-weight: 600;
       margin-bottom: 6px;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .header p {
@@ -55,6 +54,12 @@
       font-weight: 600;
       display: none;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
 
     .container {
@@ -79,10 +84,7 @@
       background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      background-clip: text;
       margin-bottom: 12px;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: 2px;
     }
 
     #status {
@@ -91,10 +93,6 @@
       font-weight: 600;
       border-radius: 14px;
       text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
       font-size: 15px;
     }
     .ok { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); color: #1b5e20; border: 1px solid #a5d6a7; }
@@ -111,65 +109,6 @@
       text-align: center;
       margin-bottom: 18px;
       box-shadow: 0 6px 20px rgba(238, 90, 111, 0.4);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.02); opacity: 0.9; }
-    }
-
-    .install-prompt {
-      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
-      color: white;
-      padding: 24px;
-      border-radius: 20px;
-      margin-bottom: 20px;
-      text-align: center;
-      box-shadow: 0 6px 25px rgba(205, 153, 52, 0.4);
-    }
-
-    #employeeSetup {
-      background: white;
-      padding: 32px;
-      border-radius: 20px;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-      text-align: center;
-      border: 2px solid rgba(205, 153, 52, 0.2);
-      margin-bottom: 20px;
-    }
-
-    #employeeSetup h3 {
-      color: var(--gold);
-      margin-bottom: 12px;
-      font-size: 22px;
-    }
-
-    #employeeSetup p {
-      color: #666;
-      margin-bottom: 16px;
-    }
-
-    #employeeSetup select {
-      width: 100%;
-      padding: 16px;
-      border: 2px solid #e8e8e8;
-      border-radius: 14px;
-      font-size: 16px;
-      margin-bottom: 16px;
-      background: #fafafa;
-    }
-
-    #employeeSetup button {
-      width: 100%;
-      padding: 16px;
-      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
-      color: white;
-      border: none;
-      border-radius: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 17px;
     }
 
     .employee-badge {
@@ -194,6 +133,38 @@
       font-weight: 600;
       margin-top: 8px;
       cursor: pointer;
+    }
+
+    #employeeSetup {
+      background: white;
+      padding: 32px;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      text-align: center;
+      border: 2px solid rgba(205, 153, 52, 0.2);
+    }
+
+    #employeeSetup h3 { color: var(--gold); margin-bottom: 12px; font-size: 22px; }
+    #employeeSetup p { color: #666; margin-bottom: 16px; }
+    #employeeSetup select {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid #e8e8e8;
+      border-radius: 14px;
+      font-size: 16px;
+      margin-bottom: 16px;
+      background: #fafafa;
+    }
+    #employeeSetup button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+      color: white;
+      border: none;
+      border-radius: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 17px;
     }
 
     label {
@@ -238,6 +209,7 @@
     }
 
     button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .clockInBtn {
       background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
@@ -252,6 +224,21 @@
     .myTimesBtn {
       background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%);
       box-shadow: 0 6px 20px rgba(205, 153, 52, 0.35);
+    }
+
+    /* NEW: Manual Sync Button */
+    #manualSyncBtn {
+      background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+      box-shadow: 0 6px 20px rgba(33, 150, 243, 0.35);
+      display: none;
+      font-size: 16px;
+      padding: 16px;
+      animation: attention 3s infinite;
+    }
+
+    @keyframes attention {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); box-shadow: 0 8px 25px rgba(33, 150, 243, 0.5); }
     }
 
     .clientInfoBtn {
@@ -304,40 +291,52 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    .sync-help {
+      background: #e3f2fd;
+      border: 2px solid #2196f3;
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .sync-help h4 {
+      color: #1976d2;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .sync-help p {
+      color: #555;
+      font-size: 14px;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>💛 SOMD Home Health</h1>
     <p>Compassionate Care • Time Clock</p>
-    <div id="syncBadge" style="display:none;">📤 0 pending</div>
+    <div id="syncBadge">📤 0 pending</div>
   </div>
 
   <div class="container">
-    <!-- Employee Setup with DROPDOWN (No keyboard needed!) -->
+    <!-- Employee Setup -->
     <div id="employeeSetup" style="display:none;">
       <h3>👋 Welcome!</h3>
       <p>Select your name to get started</p>
       <p style="font-size:13px; color:#999;">You only need to do this once</p>
-      
       <select id="employeeDropdown">
         <option value="">-- Select your name --</option>
       </select>
-      
       <button onclick="saveEmployeeSelection()">💛 Continue</button>
     </div>
 
     <!-- Main App -->
     <div id="mainApp" style="display:none;">
-      <div id="installPrompt" style="display:none;" class="install-prompt">
-        <h3>📱 Install Our App</h3>
-        <p>Add to home screen for offline use!</p>
-        <button onclick="installApp()">💛 Install Now</button>
-        <button onclick="dismissInstall()">Maybe Later</button>
-      </div>
-
       <div id="offlineBadge" style="display:none;" class="offline-badge">
-        📴 Offline Mode - Data will sync when connected
+        📴 Offline Mode - Tap SYNC NOW when connected!
       </div>
 
       <div class="employee-badge">
@@ -348,6 +347,19 @@
 
       <div id="timeDisplay">--:--:--</div>
       <div id="status" class="warn"><span class="loading"></span> Loading…</div>
+
+      <!-- NEW: Manual Sync Button (Shows when items pending) -->
+      <button id="manualSyncBtn" onclick="manualSync()" style="display:none;">
+        🔄 SYNC NOW (Tap to send pending clock-ins!)
+      </button>
+
+      <!-- NEW: Sync Help Box -->
+      <div class="sync-help" id="syncHelp">
+        <h4>📤 Pending Clock-Ins Detected!</h4>
+        <p><strong>You have clock-ins that haven't synced yet.</strong></p>
+        <p>Stay connected to WiFi or cellular and tap the <strong>SYNC NOW</strong> button above.</p>
+        <p>Keep the app open for 1-2 minutes while syncing.</p>
+      </div>
 
       <div class="card">
         <input type="hidden" id="employee" />
@@ -374,7 +386,7 @@
       </div>
 
       <div style="text-align:center; font-size:12px; color:#999; padding:8px;">
-        v1.8.3 • SOMD Home Health 💛
+        v1.9.0 • SOMD Home Health 💛
       </div>
     </div>
   </div>
@@ -389,21 +401,17 @@
 
   <script src="app.js"></script>
   <script>
-    // ENHANCED: Dropdown employee selector (no typing = no keyboard issues!)
+    // Employee setup functions (from dropdown version)
     let currentEmployee = null;
 
     function checkUserSetup() {
       const savedEmployeeName = localStorage.getItem('selectedEmployee');
       
       if (!savedEmployeeName) {
-        // First time - show employee selector
         document.getElementById('employeeSetup').style.display = 'block';
         document.getElementById('mainApp').style.display = 'none';
-        
-        // Populate dropdown when meta loads
         loadMetaThenPopulateSetup();
       } else {
-        // Returning user
         document.getElementById('employeeSetup').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         loadEmployeeByName(savedEmployeeName);
@@ -411,36 +419,27 @@
     }
 
     async function loadMetaThenPopulateSetup() {
-      try {
-        // Wait for meta to load
-        let attempts = 0;
-        while (!meta && attempts < 20) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          attempts++;
-        }
-        
-        if (!meta) {
-          await loadMeta();
-        }
-        
-        // Populate dropdown
-        const dropdown = document.getElementById('employeeDropdown');
-        dropdown.innerHTML = '<option value="">-- Select your name --</option>';
-        
-        meta.employees.forEach(emp => {
-          const option = document.createElement('option');
-          option.value = emp.fullName; // Use full name as value
-          option.textContent = emp.fullName;
-          option.dataset.email = emp.email;
-          option.dataset.workEmail = emp.workEmail || '';
-          option.dataset.role = emp.role || '';
-          option.dataset.shortName = emp.name;
-          dropdown.appendChild(option);
-        });
-        
-      } catch (error) {
-        console.error('Error loading employee list:', error);
+      let attempts = 0;
+      while (!meta && attempts < 20) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
       }
+      
+      if (!meta) await loadMeta();
+      
+      const dropdown = document.getElementById('employeeDropdown');
+      dropdown.innerHTML = '<option value="">-- Select your name --</option>';
+      
+      meta.employees.forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.fullName;
+        option.textContent = emp.fullName;
+        option.dataset.email = emp.email;
+        option.dataset.workEmail = emp.workEmail || '';
+        option.dataset.role = emp.role || '';
+        option.dataset.shortName = emp.name;
+        dropdown.appendChild(option);
+      });
     }
 
     function saveEmployeeSelection() {
@@ -448,16 +447,13 @@
       const selectedOption = dropdown.options[dropdown.selectedIndex];
       
       if (!selectedOption || !selectedOption.value) {
-        alert('Please select your name from the list');
+        alert('Please select your name');
         return;
       }
       
       const employeeFullName = selectedOption.value;
-      
-      // Save selection
       localStorage.setItem('selectedEmployee', employeeFullName);
       
-      // Store employee data
       const employeeData = {
         fullName: employeeFullName,
         shortName: selectedOption.dataset.shortName,
@@ -467,68 +463,30 @@
       };
       localStorage.setItem('employeeData', JSON.stringify(employeeData));
       
-      // Hide setup, show app
       document.getElementById('employeeSetup').style.display = 'none';
       document.getElementById('mainApp').style.display = 'block';
-      
       loadEmployeeByName(employeeFullName);
     }
 
     async function loadEmployeeByName(fullName) {
-      try {
-        setStatus('🔍 Loading your info...', 'warn');
+      const stored = localStorage.getItem('employeeData');
+      let employeeData = stored ? JSON.parse(stored) : null;
+      
+      if (employeeData) {
+        currentEmployee = employeeData;
+        document.getElementById('employeeName').textContent = '👤 ' + employeeData.fullName;
+        document.getElementById('employeeRole').textContent = employeeData.role || 'Caregiver';
+        document.getElementById('employee').value = employeeData.shortName;
+        document.getElementById('employeeEmail').value = employeeData.email;
+        document.getElementById('role').value = employeeData.role || '';
         
-        // Try to get from localStorage first
-        const stored = localStorage.getItem('employeeData');
-        let employeeData = null;
-        
-        if (stored) {
-          employeeData = JSON.parse(stored);
-        } else {
-          // Wait for meta
-          let attempts = 0;
-          while (!meta && attempts < 10) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            attempts++;
-          }
-          
-          if (!meta) await loadMeta();
-          
-          const employee = meta.employees.find(e => e.fullName === fullName);
-          if (employee) {
-            employeeData = {
-              fullName: employee.fullName,
-              shortName: employee.name,
-              email: employee.email,
-              workEmail: employee.workEmail || '',
-              role: employee.role
-            };
-            localStorage.setItem('employeeData', JSON.stringify(employeeData));
-          }
-        }
-        
-        if (employeeData) {
-          currentEmployee = employeeData;
-          
-          document.getElementById('employeeName').textContent = '👤 ' + employeeData.fullName;
-          document.getElementById('employeeRole').textContent = employeeData.role || 'Caregiver';
-          document.getElementById('employee').value = employeeData.shortName;
-          document.getElementById('employeeEmail').value = employeeData.email;
-          document.getElementById('role').value = employeeData.role || '';
-          
-          setStatus(`👋 Welcome back, ${employeeData.fullName.split(' ')[0]}!`, 'ok');
-          showSyncStatus();
-        } else {
-          setStatus('⚠️ Employee not found. Please switch employee.', 'err');
-        }
-      } catch (error) {
-        console.error('Error loading employee:', error);
-        setStatus('Error loading your info. Please refresh.', 'err');
+        setStatus(`👋 Welcome, ${employeeData.fullName.split(' ')[0]}!`, 'ok');
+        await showSyncStatus();
       }
     }
 
     function changeEmployee() {
-      if (confirm('Switch to a different employee? This will clear your saved selection.')) {
+      if (confirm('Switch employee? This will clear your selection.')) {
         localStorage.removeItem('selectedEmployee');
         localStorage.removeItem('employeeData');
         currentEmployee = null;
@@ -537,6 +495,30 @@
         loadMetaThenPopulateSetup();
       }
     }
+
+    // Show/hide sync help based on pending items
+    async function updateSyncUI() {
+      const db = await openDB();
+      const tx = db.transaction('pending-actions', 'readonly');
+      const store = tx.objectStore('pending-actions');
+      
+      const allRecords = await new Promise((resolve) => {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result || []);
+        request.onerror = () => resolve([]);
+      });
+      
+      const pending = allRecords.filter(r => !r.synced);
+      const helpBox = document.getElementById('syncHelp');
+      
+      if (pending.length > 0) {
+        helpBox.style.display = 'block';
+      } else {
+        helpBox.style.display = 'none';
+      }
+    }
+
+    setInterval(updateSyncUI, 10000); // Update every 10 seconds
 
     document.addEventListener('DOMContentLoaded', () => {
       checkUserSetup();
@@ -547,8 +529,7 @@
         .then(reg => {
           console.log('✅ Service Worker registered');
           reg.update();
-        })
-        .catch(err => console.log('❌ SW failed:', err));
+        });
     }
   </script>
 </body>
