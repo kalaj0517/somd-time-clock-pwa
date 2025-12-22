@@ -28,39 +28,10 @@
       padding: 24px 20px;
       text-align: center;
       box-shadow: 0 4px 20px rgba(205, 153, 52, 0.3);
-      position: relative;
     }
 
-    .header h1 {
-      font-size: 26px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .header p {
-      font-size: 14px;
-      opacity: 0.95;
-    }
-
-    #syncBadge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(255,255,255,0.9);
-      color: var(--gold);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      display: none;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-    }
+    .header h1 { font-size: 26px; font-weight: 600; margin-bottom: 6px; }
+    .header p { font-size: 14px; opacity: 0.95; }
 
     .container {
       max-width: 520px;
@@ -95,9 +66,9 @@
       text-align: center;
       font-size: 15px;
     }
-    .ok { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); color: #1b5e20; border: 1px solid #a5d6a7; }
-    .err { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); color: #b71c1c; border: 1px solid #ef9a9a; }
-    .warn { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); color: #e65100; border: 1px solid #ffcc80; }
+    .ok { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); color: #1b5e20; }
+    .err { background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); color: #b71c1c; }
+    .warn { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); color: #e65100; }
 
     .offline-badge {
       background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
@@ -209,7 +180,6 @@
     }
 
     button:active { transform: scale(0.97); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .clockInBtn {
       background: linear-gradient(135deg, #2e7d32 0%, #43a047 100%);
@@ -224,21 +194,6 @@
     .myTimesBtn {
       background: linear-gradient(135deg, var(--gold-dark) 0%, var(--gold) 100%);
       box-shadow: 0 6px 20px rgba(205, 153, 52, 0.35);
-    }
-
-    /* NEW: Manual Sync Button */
-    #manualSyncBtn {
-      background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
-      box-shadow: 0 6px 20px rgba(33, 150, 243, 0.35);
-      display: none;
-      font-size: 16px;
-      padding: 16px;
-      animation: attention 3s infinite;
-    }
-
-    @keyframes attention {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.02); box-shadow: 0 8px 25px rgba(33, 150, 243, 0.5); }
     }
 
     .clientInfoBtn {
@@ -266,7 +221,6 @@
       justify-content: center;
       align-items: center;
       z-index: 999;
-      backdrop-filter: blur(5px);
     }
 
     #clientPopup .popupCard {
@@ -291,34 +245,12 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
-
-    .sync-help {
-      background: #e3f2fd;
-      border: 2px solid #2196f3;
-      border-radius: 12px;
-      padding: 16px;
-      margin-top: 20px;
-      display: none;
-    }
-
-    .sync-help h4 {
-      color: #1976d2;
-      margin-bottom: 8px;
-      font-size: 16px;
-    }
-
-    .sync-help p {
-      color: #555;
-      font-size: 14px;
-      line-height: 1.5;
-    }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>💛 SOMD Home Health</h1>
     <p>Compassionate Care • Time Clock</p>
-    <div id="syncBadge">📤 0 pending</div>
   </div>
 
   <div class="container">
@@ -336,7 +268,7 @@
     <!-- Main App -->
     <div id="mainApp" style="display:none;">
       <div id="offlineBadge" style="display:none;" class="offline-badge">
-        📴 Offline Mode - Tap SYNC NOW when connected!
+        📴 No Internet Connection
       </div>
 
       <div class="employee-badge">
@@ -347,19 +279,6 @@
 
       <div id="timeDisplay">--:--:--</div>
       <div id="status" class="warn"><span class="loading"></span> Loading…</div>
-
-      <!-- NEW: Manual Sync Button (Shows when items pending) -->
-      <button id="manualSyncBtn" onclick="manualSync()" style="display:none;">
-        🔄 SYNC NOW (Tap to send pending clock-ins!)
-      </button>
-
-      <!-- NEW: Sync Help Box -->
-      <div class="sync-help" id="syncHelp">
-        <h4>📤 Pending Clock-Ins Detected!</h4>
-        <p><strong>You have clock-ins that haven't synced yet.</strong></p>
-        <p>Stay connected to WiFi or cellular and tap the <strong>SYNC NOW</strong> button above.</p>
-        <p>Keep the app open for 1-2 minutes while syncing.</p>
-      </div>
 
       <div class="card">
         <input type="hidden" id="employee" />
@@ -386,7 +305,7 @@
       </div>
 
       <div style="text-align:center; font-size:12px; color:#999; padding:8px;">
-        v1.9.5 • SOMD Home Health 💛
+        v2.0.0 • SOMD Home Health 💛
       </div>
     </div>
   </div>
@@ -401,7 +320,6 @@
 
   <script src="app.js"></script>
   <script>
-    // Employee setup functions (from dropdown version)
     let currentEmployee = null;
 
     function checkUserSetup() {
@@ -434,8 +352,7 @@
         const option = document.createElement('option');
         option.value = emp.fullName;
         option.textContent = emp.fullName;
-        option.dataset.email = emp.email;
-        option.dataset.workEmail = emp.workEmail || '';
+        option.dataset.email = emp.email; // Work email from Column C
         option.dataset.role = emp.role || '';
         option.dataset.shortName = emp.name;
         dropdown.appendChild(option);
@@ -457,8 +374,7 @@
       const employeeData = {
         fullName: employeeFullName,
         shortName: selectedOption.dataset.shortName,
-        email: selectedOption.dataset.email,
-        workEmail: selectedOption.dataset.workEmail,
+        email: selectedOption.dataset.email, // Work email
         role: selectedOption.dataset.role
       };
       localStorage.setItem('employeeData', JSON.stringify(employeeData));
@@ -481,7 +397,6 @@
         document.getElementById('role').value = employeeData.role || '';
         
         setStatus(`👋 Welcome, ${employeeData.fullName.split(' ')[0]}!`, 'ok');
-        await showSyncStatus();
       }
     }
 
@@ -496,40 +411,13 @@
       }
     }
 
-    // Show/hide sync help based on pending items
-    async function updateSyncUI() {
-      const db = await openDB();
-      const tx = db.transaction('pending-actions', 'readonly');
-      const store = tx.objectStore('pending-actions');
-      
-      const allRecords = await new Promise((resolve) => {
-        const request = store.getAll();
-        request.onsuccess = () => resolve(request.result || []);
-        request.onerror = () => resolve([]);
-      });
-      
-      const pending = allRecords.filter(r => !r.synced);
-      const helpBox = document.getElementById('syncHelp');
-      
-      if (pending.length > 0) {
-        helpBox.style.display = 'block';
-      } else {
-        helpBox.style.display = 'none';
-      }
-    }
-
-    setInterval(updateSyncUI, 10000); // Update every 10 seconds
-
     document.addEventListener('DOMContentLoaded', () => {
       checkUserSetup();
     });
 
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
-        .then(reg => {
-          console.log('✅ Service Worker registered');
-          reg.update();
-        });
+        .then(reg => reg.update());
     }
   </script>
 </body>
