@@ -243,7 +243,7 @@ payload.id = payload.id || (crypto.randomUUID
       }
     } else {
       // Failed but will retry in background - don't tell employee!
-      setStatus(`✅ ${action} recorded! Syncing in background...`, 'ok');
+      setStatus(`⚠️ ${action} saved (pending sync). Keep app open a moment.`, 'warn');
     }
   } else {
     // Offline - save and will sync later
