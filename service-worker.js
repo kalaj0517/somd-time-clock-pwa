@@ -15,16 +15,34 @@ const CACHE_FILES = [
 ];
 
 // Install - cache files
-self.addEventListener('install', (event) => {
-  console.log('[SW] Installing...');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('[SW] Caching files');
-        return cache.addAll(CACHE_FILES);
-      })
-      .then(() => self.skipWaiting())
-      .catch(err => console.error('[SW] Cache failed:', err))
+self.addEventListener('fetch', (event) => {
+  if (!event.request.url.startsWith('http')) return;
+
+  const url = new URL(event.request.url);
+
+  // NEVER cache Apps Script / API calls
+  const isApiCall =
+    url.hostname.includes('script.google.com') ||
+    url.hostname.includes('googleusercontent.com') ||
+    url.pathname.includes('/macros/s/');
+
+  if (isApiCall) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
+
+  // App shell: cache-first
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(event.request).then((response) => {
+        if (!response || response.status !== 200) return response;
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        return response;
+      }).catch(() => caches.match(`${BASE_PATH}/index.html`));
+    })
   );
 });
 
