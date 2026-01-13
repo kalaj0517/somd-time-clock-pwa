@@ -191,19 +191,26 @@ async function submitClock(action) {
 
   // Allow Clock In even if open session exists
   let previousClockOut = '';
-  if (action === 'Clock In' && navigator.onLine) {
+
+if (action === 'Clock In' && navigator.onLine) {
+  try {
     const openSession = await checkForOpenSession(employeeName);
     if (openSession) {
       const clockInTime = new Date(openSession.clockIn);
       const input = prompt(
         `⚠️ You're still clocked in at ${openSession.client} since ${clockInTime.toLocaleTimeString()}.\n\n` +
         `Enter the time you LEFT that client (HH:MM or 2:15 PM).\n` +
-        `Press Cancel to keep it open and continue clocking in.`
+        `Press Cancel to auto-close it at the current time and continue.`
       );
-      if (input && input.trim()) previousClockOut = input.trim();
-      // Do NOT return; continue
+      if (input && input.trim()) {
+        previousClockOut = input.trim();
+      }
+      // DO NOT return — continue clocking in
     }
-  }
+  } catch (e) {}
+}
+
+payload.previousClockOut = previousClockOut;
 
   const payload = {
     id: uuid(),
