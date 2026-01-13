@@ -444,14 +444,19 @@
         });
         
         console.log('Fetching:', `${API_URL}?${params.toString()}`);
-        const response = await fetch(`${API_URL}?${params.toString()}`);
+        const body = new URLSearchParams({
+          action: 'getMyTimes',
+          email: userEmail,
+          range: range,
+          t: Date.now()
+        });
         
-        if (!response.ok) {
-          throw new Error('Failed to load times');
-        }
-        
-        const data = await response.json();
-        console.log('✅ Received data:', data);
+       const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+          body,
+          cache: 'no-store'
+        });
         
         displayTimes(data);
         
