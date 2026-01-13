@@ -115,12 +115,12 @@ function populateDropdowns() {
     empDropdown.innerHTML = '<option value="">-- Select your name --</option>';
     meta.employees.forEach(emp => {
       const option = document.createElement('option');
-      option.value = emp.fullName;
-      option.textContent = emp.fullName;
-      option.dataset.email = emp.email || '';
-      option.dataset.role = emp.role || '';
-      option.dataset.shortName = emp.shortName || emp.name || emp.fullName;
-      empDropdown.appendChild(option);
+     option.value = emp.fullName;          // just for display label / selected text
+     option.textContent = emp.fullName;
+     option.dataset.shortName = emp.name;  // ✅ this is the short name from getMeta()
+     option.dataset.email = emp.email || '';
+     option.dataset.role = emp.role || '';
+     empDropdown.appendChild(option);
     });
   }
 }
@@ -131,7 +131,8 @@ function saveEmployeeSelection() {
   const selected = dd?.options?.[dd.selectedIndex];
   if (!selected || !selected.value) return;
 
-  const shortName = selected.dataset.shortName || selected.value;
+  const shortName = selected.dataset.shortName;
+  if (!shortName) return setStatus('⚠️ Missing short name. Refresh the app.', 'err');
   const email = (selected.dataset.email || '').trim().toLowerCase();
   const role = selected.dataset.role || '';
 
@@ -210,22 +211,38 @@ if (action === 'Clock In' && navigator.onLine) {
   } catch (e) {}
 }
 
-payload.previousClockOut = previousClockOut;
+// Allow Clock In even if open session exists
+let previousClockOut = '';
 
-  const payload = {
-    id: uuid(),
-    timestamp: Date.now(),
-    employeeName,
-    employeeEmail: (employeeEmail || '').trim().toLowerCase(),
-    role,
-    clientName,
-    action,
-    lat: lat ?? '',
-    lng: lng ?? '',
-    note,
-    mileage,
-    previousClockOut
-  };
+if (action === 'Clock In' && navigator.onLine) {
+  try {
+    const openSession = await checkForOpenSession(employeeName);
+    if (openSession) {
+      const clockInTime = new Date(openSession.clockIn);
+      const input = prompt(
+        `⚠️ You're still clocked in at ${openSession.client} since ${clockInTime.toLocaleTimeString()}.\n\n` +
+        `Enter the time you LEFT that client (HH:MM or 2:15 PM).\n` +
+        `Press Cancel to auto-close it at the current time and continue.`
+      );
+      if (input && input.trim()) previousClockOut = input.trim();
+    }
+  } catch (e) {}
+}
+
+const payload = {
+  id: uuid(),
+  timestamp: Date.now(),
+  employeeName,
+  employeeEmail: (employeeEmail || '').trim().toLowerCase(),
+  role,
+  clientName,
+  action,
+  lat: lat ?? '',
+  lng: lng ?? '',
+  note,
+  mileage,
+  previousClockOut
+};
 
   setStatus(`📤 ${action}ing...`, 'warn');
 
