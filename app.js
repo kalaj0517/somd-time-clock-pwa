@@ -220,6 +220,12 @@ async function submitClock(action) {
 
   setStatus(`📤 ${action}ing...`, 'warn');
 
+payload.id = payload.id || (crypto.randomUUID
+ ? crypto.randomUUID()
+ : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+
+  payload.timestamp = payload.timestamp || Date.now();
+  
   // Save to IndexedDB for backup
   await saveToIndexedDB(payload);
 
