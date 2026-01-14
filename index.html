@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
   <meta name="theme-color" content="#cd9934">
   <title>SOMD Time Clock</title>
   <link rel="manifest" href="manifest.json">
@@ -113,11 +113,6 @@
       box-shadow: 0 8px 30px rgba(0,0,0,0.1);
       text-align: center;
       border: 2px solid rgba(205, 153, 52, 0.2);
-      /* ✅ Force visibility on mobile */
-      opacity: 1 !important;
-      visibility: visible !important;
-      position: relative;
-      z-index: 999;
     }
 
     #employeeSetup h3 { color: var(--gold); margin-bottom: 12px; font-size: 22px; }
@@ -130,6 +125,8 @@
       font-size: 16px;
       margin-bottom: 16px;
       background: #fafafa;
+      -webkit-appearance: menulist;
+      appearance: menulist;
     }
     #employeeSetup button {
       width: 100%;
@@ -253,33 +250,15 @@
 
     /* ✅ Mobile-specific fixes */
     @media (max-width: 768px) {
-      #employeeSetup {
-        display: block !important;
-        min-height: 400px;
-        width: 100% !important;
-        max-width: 100% !important;
-      }
-      
       #employeeSetup select {
-        -webkit-appearance: menulist !important;
-        appearance: menulist !important;
         min-height: 50px;
-        font-size: 16px !important; /* Prevents zoom on iOS */
+        font-size: 16px !important;
       }
       
       #employeeSetup button {
         min-height: 50px;
-        font-size: 16px !important; /* Prevents zoom on iOS */
+        font-size: 16px !important;
       }
-    }
-
-    /* ✅ Utility classes */
-    .hidden {
-      display: none !important;
-    }
-    
-    .visible {
-      display: block !important;
     }
   </style>
 </head>
@@ -290,7 +269,7 @@
   </div>
 
   <div class="container">
-    <!-- ✅ Debug info (remove after testing) -->
+    <!-- ✅ Debug info -->
     <div id="debugInfo" style="background: #fff3cd; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; display: none;">
       <strong>Debug:</strong>
       <div id="debugText"></div>
@@ -347,7 +326,7 @@
       </div>
 
       <div style="text-align:center; font-size:12px; color:#999; padding:8px;">
-        v3.0.1 • SOMD Home Health 💛
+        v2.1.0 • SOMD Home Health 💛
       </div>
     </div>
   </div>
@@ -360,84 +339,75 @@
     </div>
   </div>
 
-  <!-- ✅ Load app.js FIRST so functions are available -->
   <script src="app.js"></script>
 
-  <!-- ✅ Then run page-specific code -->
   <script>
-    // Create namespace for app functions to avoid global pollution
     window.appFunctions = window.appFunctions || {};
-
     let currentEmployee = null;
 
     function checkUserSetup() {
       const savedEmployeeName = localStorage.getItem('selectedEmployee');
       
-      console.log('👤 Checking user setup...', {
-        savedEmployeeName,
-        pathname: window.location.pathname
-      });
+      console.log('👤 Checking user setup...', { savedEmployeeName });
+      
+      const setupEl = document.getElementById('employeeSetup');
+      const appEl = document.getElementById('mainApp');
       
       if (!savedEmployeeName) {
-        console.log('📝 No saved employee - showing setup screen');
-        const setupEl = document.getElementById('employeeSetup');
-        const appEl = document.getElementById('mainApp');
+        console.log('📝 Showing setup screen');
         
-        // ✅ Force display with multiple methods for mobile compatibility
-        setupEl.style.display = 'block';
-        setupEl.style.opacity = '1';
-        setupEl.style.visibility = 'visible';
-        setupEl.classList.remove('hidden');
+        // ✅ USE setProperty WITH 'important' FLAG - THIS IS THE KEY!
+        setupEl.style.setProperty('display', 'block', 'important');
+        setupEl.style.setProperty('opacity', '1', 'important');
+        setupEl.style.setProperty('visibility', 'visible', 'important');
+        setupEl.style.setProperty('z-index', '9999', 'important');
         
-        appEl.style.display = 'none';
+        appEl.style.setProperty('display', 'none', 'important');
         
-        // Verify it's visible
-        console.log('✅ Setup screen display:', {
-          display: setupEl.style.display,
-          opacity: setupEl.style.opacity,
-          visibility: setupEl.style.visibility,
-          offsetHeight: setupEl.offsetHeight // 0 = not visible
-        });
+        // Update debug info
+        setTimeout(() => {
+          const debugEl = document.getElementById('debugInfo');
+          const debugText = document.getElementById('debugText');
+          if (debugEl && debugText) {
+            debugEl.style.display = 'block';
+            debugText.innerHTML = `
+              Screen: ${window.innerWidth}x${window.innerHeight}<br>
+              User Agent: ${navigator.userAgent.substring(0, 50)}...<br>
+              Saved Employee: None<br>
+              Setup Element Exists: Yes<br>
+              Setup Display: ${setupEl.style.display}<br>
+              Setup Height: ${setupEl.offsetHeight}px<br>
+              ✅ FORCED WITH !IMPORTANT
+            `;
+          }
+        }, 100);
         
         loadMetaThenPopulateSetup();
       } else {
-        console.log('✅ Employee found - showing main app');
-        const setupEl = document.getElementById('employeeSetup');
-        const appEl = document.getElementById('mainApp');
-        
-        setupEl.style.display = 'none';
-        appEl.style.display = 'block';
-        appEl.style.opacity = '1';
-        appEl.style.visibility = 'visible';
-        
+        console.log('✅ Showing main app');
+        setupEl.style.setProperty('display', 'none', 'important');
+        appEl.style.setProperty('display', 'block', 'important');
         loadEmployeeByName(savedEmployeeName);
       }
     }
 
     async function loadMetaThenPopulateSetup() {
-      console.log('🔄 Loading meta for employee setup...');
+      console.log('🔄 Loading meta...');
       
-      // Wait for meta to load from app.js
       let attempts = 0;
       while (!window.meta && attempts < 20) {
         await new Promise(resolve => setTimeout(resolve, 500));
         attempts++;
       }
       
-      // If still no meta, try to load it
       if (!window.meta) {
-        console.log('⚠️ Meta not loaded, attempting to load...');
-        if (typeof loadMeta === 'function') {
-          await loadMeta();
-        }
+        console.log('⚠️ Trying to load meta...');
+        if (typeof loadMeta === 'function') await loadMeta();
       }
 
-      // Check one more time
       if (!window.meta || !window.meta.employees) {
-        console.error('❌ Unable to load employee data');
-        if (typeof setStatus === 'function') {
-          setStatus('❌ Unable to load employee data. Please refresh.', 'err');
-        }
+        console.error('❌ No employee data');
+        if (typeof setStatus === 'function') setStatus('❌ Unable to load. Please refresh.', 'err');
         return;
       }
 
@@ -447,21 +417,17 @@
       dropdown.innerHTML = '<option value="">-- Select your name --</option>';
       
       window.meta.employees.forEach(emp => {
-        console.log('Adding employee:', emp);
         const option = document.createElement('option');
-        
-        // ✅ Store ALL the data we need in data attributes
-        option.value = emp.fullName;              // Full name for display
-        option.textContent = emp.fullName;        // What shows in dropdown
-        option.dataset.shortName = emp.name;      // Short name (e.g., "Cheyenne A.")
-        option.dataset.fullName = emp.fullName;   // Full name for reference
-        option.dataset.email = emp.email || '';   // Work email from Column C
-        option.dataset.role = emp.role || '';     // Position/role
-        
+        option.value = emp.fullName;
+        option.textContent = emp.fullName;
+        option.dataset.shortName = emp.name;
+        option.dataset.fullName = emp.fullName;
+        option.dataset.email = emp.email || '';
+        option.dataset.role = emp.role || '';
         dropdown.appendChild(option);
       });
 
-      console.log('✅ Dropdown populated with', window.meta.employees.length, 'employees');
+      console.log('✅ Dropdown populated:', window.meta.employees.length);
     }
 
     window.appFunctions.saveEmployeeSelection = function() {
@@ -473,9 +439,6 @@
         return;
       }
 
-      console.log('💾 Saving employee selection:', selectedOption);
-      
-      // ✅ Get ALL the data from the option's dataset
       const employeeData = {
         fullName: selectedOption.dataset.fullName || selectedOption.value,
         shortName: selectedOption.dataset.shortName || selectedOption.value,
@@ -483,77 +446,53 @@
         role: selectedOption.dataset.role || ''
       };
 
-      console.log('💾 Employee data to save:', employeeData);
-
-      // Validate we have the critical data
       if (!employeeData.shortName) {
-        console.error('❌ Missing short name!');
-        alert('Error: Missing employee data. Please refresh the page and try again.');
+        alert('Error: Missing data. Please refresh.');
         return;
       }
 
-      // Save to localStorage
       localStorage.setItem('selectedEmployee', employeeData.fullName);
       localStorage.setItem('employeeData', JSON.stringify(employeeData));
       
-      // ✅ CRITICAL: Save email for My Times page
       if (employeeData.email) {
         localStorage.setItem('userEmail', employeeData.email);
-        console.log('✅ Saved userEmail for My Times:', employeeData.email);
       }
       
-      console.log('✅ Employee selection saved');
-      
-      // Switch to main app
-      document.getElementById('employeeSetup').style.display = 'none';
-      document.getElementById('mainApp').style.display = 'block';
+      document.getElementById('employeeSetup').style.setProperty('display', 'none', 'important');
+      document.getElementById('mainApp').style.setProperty('display', 'block', 'important');
       loadEmployeeByName(employeeData.fullName);
     };
 
     async function loadEmployeeByName(fullName) {
-      console.log('📂 Loading employee by name:', fullName);
-      
       const stored = localStorage.getItem('employeeData');
       let employeeData = stored ? JSON.parse(stored) : null;
       
       if (employeeData) {
-        console.log('✅ Employee data loaded:', employeeData);
         currentEmployee = employeeData;
-        
-        // Update the display
         document.getElementById('employeeName').textContent = '👤 ' + employeeData.fullName;
         document.getElementById('employeeRole').textContent = employeeData.role || 'Caregiver';
-        
-        // ✅ Set the hidden form fields with SHORT NAME (what the server expects)
         document.getElementById('employee').value = employeeData.shortName;
         document.getElementById('employeeEmail').value = employeeData.email;
         document.getElementById('role').value = employeeData.role || '';
         
-        console.log('✅ Form fields set:', {
-          employee: employeeData.shortName,
-          email: employeeData.email,
-          role: employeeData.role
-        });
-        
         if (typeof setStatus === 'function') {
           setStatus(`👋 Welcome, ${employeeData.fullName.split(' ')[0]}!`, 'ok');
-        }
-      } else {
-        console.warn('⚠️ No employee data found in localStorage');
-        if (typeof setStatus === 'function') {
-          setStatus('⚠️ Please select your name', 'warn');
         }
       }
     }
 
     window.appFunctions.changeEmployee = function() {
       if (confirm('Switch employee? This will clear your selection.')) {
-        console.log('🔄 Clearing employee data');
         localStorage.removeItem('selectedEmployee');
         localStorage.removeItem('employeeData');
         currentEmployee = null;
-        document.getElementById('employeeSetup').style.display = 'block';
-        document.getElementById('mainApp').style.display = 'none';
+        
+        const setupEl = document.getElementById('employeeSetup');
+        const appEl = document.getElementById('mainApp');
+        
+        setupEl.style.setProperty('display', 'block', 'important');
+        appEl.style.setProperty('display', 'none', 'important');
+        
         loadMetaThenPopulateSetup();
       }
     };
@@ -580,7 +519,7 @@
 
       document.getElementById('clientInfoTitle').textContent = '📍 ' + client.name;
       document.getElementById('clientInfoBody').innerHTML =
-        `<strong>Address:</strong> ${client.address || 'No address on file'}<br><br>` +
+        `<strong>Address:</strong> ${client.address || 'No address'}<br><br>` +
         `<strong>Notes:</strong><br>${client.notes || 'No notes'}`;
 
       document.getElementById('clientPopup').style.display = 'flex';
@@ -590,36 +529,18 @@
       document.getElementById('clientPopup').style.display = 'none';
     };
 
-    // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🚀 App starting...');
-      
-      // ✅ Show debug info on mobile
-      const debugInfo = document.getElementById('debugInfo');
-      const debugText = document.getElementById('debugText');
-      
-      if (debugInfo && debugText) {
-        debugInfo.style.display = 'block';
-        debugText.innerHTML = `
-          Screen: ${window.innerWidth}x${window.innerHeight}<br>
-          User Agent: ${navigator.userAgent.substring(0, 50)}...<br>
-          Saved Employee: ${localStorage.getItem('selectedEmployee') || 'None'}<br>
-          Setup Element Exists: ${document.getElementById('employeeSetup') ? 'Yes' : 'No'}<br>
-          Setup Display: ${document.getElementById('employeeSetup')?.style.display || 'not set'}
-        `;
-      }
-      
       checkUserSetup();
     });
 
-    // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
         .then(reg => {
           console.log('✅ Service Worker registered');
           return reg.update();
         })
-        .catch(err => console.error('❌ Service Worker registration failed:', err));
+        .catch(err => console.error('❌ SW failed:', err));
     }
   </script>
 </body>
