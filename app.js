@@ -1,15 +1,17 @@
-// CareTeam Time Clock PWA - Fixed Version v2.0.1
+// CareTeam Time Clock PWA - Final Fixed Version v3.0.1
 // Key fixes:
+// - Exposes meta globally for index.html to use
 // - Better meta loading with retry logic
 // - Consistent employee data handling
 // - Improved error logging
-// - Fixed dropdown population
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbyQ_Q7Wi7XQAOnYbxZWRjCM2MlBdU3x0mFhgzOZuqX8ApEFJimHEvlQY1SF6s6oEtqH/exec';
 
 let lat = null, lng = null;
-let meta = null;
 let syncInProgress = false;
+
+// ✅ Make meta globally accessible for index.html
+window.meta = null;
 
 // ---------- Utilities ----------
 function uuid() {
@@ -18,13 +20,14 @@ function uuid() {
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-function setStatus(msg, cls) {
+// ✅ Make setStatus globally accessible
+window.setStatus = function(msg, cls) {
   const el = document.getElementById('status');
   if (!el) return;
   el.innerHTML = msg;
   el.className = cls || '';
   console.log(`Status: ${msg} (${cls})`);
-}
+};
 
 function updateClock() {
   const now = new Date();
@@ -56,10 +59,10 @@ window.addEventListener('offline', () => {
 // ---------- Geolocation ----------
 function getLoc() {
   if (!navigator.geolocation) {
-    setStatus('GPS unavailable.', 'err');
+    window.setStatus('GPS unavailable.', 'err');
     return;
   }
-  setStatus('📍 Getting location...', 'warn');
+  window.setStatus('📍 Getting location...', 'warn');
   console.log('📍 Requesting geolocation...');
 
   navigator.geolocation.getCurrentPosition(
@@ -67,11 +70,11 @@ function getLoc() {
       lat = pos.coords.latitude;
       lng = pos.coords.longitude;
       console.log('✅ GPS acquired:', { lat, lng });
-      setStatus('✅ GPS ready', 'ok');
+      window.setStatus('✅ GPS ready', 'ok');
     },
     (error) => {
       console.error('❌ GPS error:', error);
-      setStatus('⚠️ GPS unavailable. Enable location permissions.', 'err');
+      window.setStatus('⚠️ GPS unavailable. Enable location permissions.', 'err');
     },
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
@@ -106,7 +109,8 @@ async function apiPost(action, params = {}) {
 }
 
 // ---------- Load meta with retry logic ----------
-async function loadMeta() {
+// ✅ Make this globally accessible
+window.loadMeta = async function() {
   console.log('🔄 Loading meta data...');
   
   try {
@@ -114,8 +118,8 @@ async function loadMeta() {
     const cached = localStorage.getItem('meta-cache');
     if (cached) {
       try {
-        meta = JSON.parse(cached);
-        console.log('✅ Loaded meta from cache:', meta);
+        window.meta = JSON.parse(cached);
+        console.log('✅ Loaded meta from cache:', window.meta);
         populateDropdowns();
       } catch (e) {
         console.warn('⚠️ Cache parse error:', e);
@@ -134,7 +138,7 @@ async function loadMeta() {
           const data = await apiPost('getMeta', {});
           
           if (data && data.employees && data.clients) {
-            meta = data;
+            window.meta = data;
             localStorage.setItem('meta-cache', JSON.stringify(data));
             console.log('✅ Meta loaded from server:', {
               employees: data.employees.length,
@@ -156,36 +160,36 @@ async function loadMeta() {
     }
     
     // If we have cached data, use it
-    if (meta) {
+    if (window.meta) {
       console.log('✅ Using cached meta data');
       populateDropdowns();
     } else {
       console.error('❌ No meta data available');
-      setStatus('❌ Unable to load data. Please check your connection and refresh.', 'err');
+      window.setStatus('❌ Unable to load data. Please check your connection and refresh.', 'err');
     }
   } catch (e) {
     console.error('❌ loadMeta error:', e);
-    if (meta) {
+    if (window.meta) {
       console.log('⚠️ Falling back to cached meta');
       populateDropdowns();
     }
   }
-}
+};
 
 function populateDropdowns() {
   console.log('📋 Populating dropdowns...');
   
-  if (!meta) {
+  if (!window.meta) {
     console.error('❌ Cannot populate: meta is null');
     return;
   }
 
   // Populate clients dropdown
   const cliSel = document.getElementById('client');
-  if (cliSel && meta.clients) {
-    console.log(`📋 Populating ${meta.clients.length} clients...`);
+  if (cliSel && window.meta.clients) {
+    console.log(`📋 Populating ${window.meta.clients.length} clients...`);
     cliSel.innerHTML = '<option value="">Select client...</option>';
-    meta.clients.forEach(c => {
+    window.meta.clients.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.name;
       opt.textContent = c.name;
@@ -196,8 +200,7 @@ function populateDropdowns() {
     console.log('✅ Clients dropdown populated');
   }
 
-  // Note: Employee dropdown is handled separately in index.html
-  // because it's only used during setup
+  // Note: Employee dropdown is handled in index.html during setup
 }
 
 // ---------- Duplicate prevention (client-side) ----------
@@ -228,7 +231,8 @@ async function checkForOpenSession(employeeName) {
 }
 
 // ---------- Clock submit ----------
-async function submitClock(action) {
+// ✅ Make this globally accessible for onclick handlers
+window.submitClock = async function(action) {
   console.log(`⏰ Clock ${action} initiated`);
   
   const employeeName = document.getElementById('employee')?.value || '';
@@ -245,17 +249,17 @@ async function submitClock(action) {
   // Validation
   if (!employeeName) {
     console.error('❌ No employee name');
-    return setStatus('⚠️ Please select your name first.', 'err');
+    return window.setStatus('⚠️ Please select your name first.', 'err');
   }
   
   if (!clientName) {
     console.error('❌ No client selected');
-    return setStatus('⚠️ Please select a client.', 'err');
+    return window.setStatus('⚠️ Please select a client.', 'err');
   }
 
   // Duplicate check
   if (isDuplicate(employeeName, clientName, action)) {
-    return setStatus(`⚠️ You just ${action.toLowerCase()}ed. Wait 10 seconds.`, 'warn');
+    return window.setStatus(`⚠️ You just ${action.toLowerCase()}ed. Wait 10 seconds.`, 'warn');
   }
 
   // Check for open session on Clock In
@@ -303,7 +307,7 @@ async function submitClock(action) {
   };
 
   console.log('📦 Payload:', payload);
-  setStatus(`📤 ${action}ing...`, 'warn');
+  window.setStatus(`📤 ${action}ing...`, 'warn');
 
   // Save to IndexedDB (always)
   await saveToIndexedDB(payload);
@@ -312,13 +316,13 @@ async function submitClock(action) {
   // Try to send
   if (!navigator.onLine) {
     console.log('📴 Offline - will sync later');
-    return setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
+    return window.setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
   }
 
   const success = await sendToServer(payload);
   if (success) {
     console.log('✅ Clock action confirmed by server');
-    setStatus(`✅ ${action} confirmed.`, 'ok');
+    window.setStatus(`✅ ${action} confirmed.`, 'ok');
     await markAsSynced(payload.id);
 
     // Clear fields after successful clock out
@@ -329,9 +333,9 @@ async function submitClock(action) {
     }
   } else {
     console.warn('⚠️ Server did not confirm - will retry later');
-    setStatus(`⚠️ ${action} saved (pending sync). Keep app open briefly.`, 'warn');
+    window.setStatus(`⚠️ ${action} saved (pending sync). Keep app open briefly.`, 'warn');
   }
-}
+};
 
 // ---------- Send to server (POST) ----------
 async function sendToServer(payload, retry = 0) {
@@ -532,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 App.js loaded and initializing...');
   updateOnlineStatus();
   getLoc();
-  loadMeta();
+  window.loadMeta(); // Use the global version
   setTimeout(() => {
     console.log('⏰ Initial sync check');
     syncPendingActions();
