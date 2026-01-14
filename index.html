@@ -262,7 +262,7 @@
       <select id="employeeDropdown">
         <option value="">-- Select your name --</option>
       </select>
-      <button onclick="saveEmployeeSelection()">💛 Continue</button>
+      <button onclick="window.appFunctions.saveEmployeeSelection()">💛 Continue</button>
     </div>
 
     <!-- Main App -->
@@ -274,7 +274,7 @@
       <div class="employee-badge">
         <h3 id="employeeName">Loading...</h3>
         <p id="employeeRole"></p>
-        <button onclick="changeEmployee()">Not you? Switch employee</button>
+        <button onclick="window.appFunctions.changeEmployee()">Not you? Switch employee</button>
       </div>
 
       <div id="timeDisplay">--:--:--</div>
@@ -287,7 +287,7 @@
         <label>🏠 Select Client</label>
         <div class="input-wrapper">
           <select id="client"></select>
-          <button class="clientInfoBtn" onclick="showClientInfo()">ℹ️</button>
+          <button class="clientInfoBtn" onclick="window.appFunctions.showClientInfo()">ℹ️</button>
         </div>
 
         <label>💼 Your Role (optional)</label>
@@ -305,7 +305,7 @@
       </div>
 
       <div style="text-align:center; font-size:12px; color:#999; padding:8px;">
-        v2.0.0 • SOMD Home Health 💛
+        v2.0.1 • SOMD Home Health 💛
       </div>
     </div>
   </div>
@@ -314,12 +314,18 @@
     <div class="popupCard">
       <h3 id="clientInfoTitle">📍 Client Info</h3>
       <p id="clientInfoBody"></p>
-      <button onclick="closeClientInfo()" style="margin-top:20px;width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);color:white;font-weight:700;">Close</button>
+      <button onclick="window.appFunctions.closeClientInfo()" style="margin-top:20px;width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);color:white;font-weight:700;">Close</button>
     </div>
   </div>
 
+  <!-- ✅ Load app.js FIRST so functions are available -->
   <script src="app.js"></script>
+
+  <!-- ✅ Then run page-specific code -->
   <script>
+    // Create namespace for app functions to avoid global pollution
+    window.appFunctions = window.appFunctions || {};
+
     let currentEmployee = null;
 
     function checkUserSetup() {
@@ -337,29 +343,56 @@
     }
 
     async function loadMetaThenPopulateSetup() {
+      console.log('🔄 Loading meta for employee setup...');
+      
+      // Wait for meta to load from app.js
       let attempts = 0;
-      while (!meta && attempts < 20) {
+      while (!window.meta && attempts < 20) {
         await new Promise(resolve => setTimeout(resolve, 500));
         attempts++;
       }
       
-      if (!meta) await loadMeta();
+      // If still no meta, try to load it
+      if (!window.meta) {
+        console.log('⚠️ Meta not loaded, attempting to load...');
+        if (typeof loadMeta === 'function') {
+          await loadMeta();
+        }
+      }
+
+      // Check one more time
+      if (!window.meta || !window.meta.employees) {
+        console.error('❌ Unable to load employee data');
+        if (typeof setStatus === 'function') {
+          setStatus('❌ Unable to load employee data. Please refresh.', 'err');
+        }
+        return;
+      }
+
+      console.log('✅ Meta loaded:', window.meta);
       
       const dropdown = document.getElementById('employeeDropdown');
       dropdown.innerHTML = '<option value="">-- Select your name --</option>';
       
-      meta.employees.forEach(emp => {
+      window.meta.employees.forEach(emp => {
+        console.log('Adding employee:', emp);
         const option = document.createElement('option');
-        option.value = emp.fullName;
-        option.textContent = emp.fullName;
-        option.dataset.email = emp.email; // Work email from Column C
-        option.dataset.role = emp.role || '';
-        option.dataset.shortName = emp.name;
+        
+        // ✅ Store ALL the data we need in data attributes
+        option.value = emp.fullName;              // Full name for display
+        option.textContent = emp.fullName;        // What shows in dropdown
+        option.dataset.shortName = emp.name;      // Short name (e.g., "Cheyenne A.")
+        option.dataset.fullName = emp.fullName;   // Full name for reference
+        option.dataset.email = emp.email || '';   // Work email from Column C
+        option.dataset.role = emp.role || '';     // Position/role
+        
         dropdown.appendChild(option);
       });
+
+      console.log('✅ Dropdown populated with', window.meta.employees.length, 'employees');
     }
 
-    function saveEmployeeSelection() {
+    window.appFunctions.saveEmployeeSelection = function() {
       const dropdown = document.getElementById('employeeDropdown');
       const selectedOption = dropdown.options[dropdown.selectedIndex];
       
@@ -367,41 +400,83 @@
         alert('Please select your name');
         return;
       }
+
+      console.log('💾 Saving employee selection:', selectedOption);
       
-      const employeeFullName = selectedOption.value;
-      localStorage.setItem('selectedEmployee', employeeFullName);
-      
+      // ✅ Get ALL the data from the option's dataset
       const employeeData = {
-        fullName: employeeFullName,
-        shortName: selectedOption.dataset.shortName,
-        email: selectedOption.dataset.email, // Work email
-        role: selectedOption.dataset.role
+        fullName: selectedOption.dataset.fullName || selectedOption.value,
+        shortName: selectedOption.dataset.shortName || selectedOption.value,
+        email: (selectedOption.dataset.email || '').trim().toLowerCase(),
+        role: selectedOption.dataset.role || ''
       };
+
+      console.log('💾 Employee data to save:', employeeData);
+
+      // Validate we have the critical data
+      if (!employeeData.shortName) {
+        console.error('❌ Missing short name!');
+        alert('Error: Missing employee data. Please refresh the page and try again.');
+        return;
+      }
+
+      // Save to localStorage
+      localStorage.setItem('selectedEmployee', employeeData.fullName);
       localStorage.setItem('employeeData', JSON.stringify(employeeData));
       
+      // ✅ CRITICAL: Save email for My Times page
+      if (employeeData.email) {
+        localStorage.setItem('userEmail', employeeData.email);
+        console.log('✅ Saved userEmail for My Times:', employeeData.email);
+      }
+      
+      console.log('✅ Employee selection saved');
+      
+      // Switch to main app
       document.getElementById('employeeSetup').style.display = 'none';
       document.getElementById('mainApp').style.display = 'block';
-      loadEmployeeByName(employeeFullName);
-    }
+      loadEmployeeByName(employeeData.fullName);
+    };
 
     async function loadEmployeeByName(fullName) {
+      console.log('📂 Loading employee by name:', fullName);
+      
       const stored = localStorage.getItem('employeeData');
       let employeeData = stored ? JSON.parse(stored) : null;
       
       if (employeeData) {
+        console.log('✅ Employee data loaded:', employeeData);
         currentEmployee = employeeData;
+        
+        // Update the display
         document.getElementById('employeeName').textContent = '👤 ' + employeeData.fullName;
         document.getElementById('employeeRole').textContent = employeeData.role || 'Caregiver';
+        
+        // ✅ Set the hidden form fields with SHORT NAME (what the server expects)
         document.getElementById('employee').value = employeeData.shortName;
         document.getElementById('employeeEmail').value = employeeData.email;
         document.getElementById('role').value = employeeData.role || '';
         
-        setStatus(`👋 Welcome, ${employeeData.fullName.split(' ')[0]}!`, 'ok');
+        console.log('✅ Form fields set:', {
+          employee: employeeData.shortName,
+          email: employeeData.email,
+          role: employeeData.role
+        });
+        
+        if (typeof setStatus === 'function') {
+          setStatus(`👋 Welcome, ${employeeData.fullName.split(' ')[0]}!`, 'ok');
+        }
+      } else {
+        console.warn('⚠️ No employee data found in localStorage');
+        if (typeof setStatus === 'function') {
+          setStatus('⚠️ Please select your name', 'warn');
+        }
       }
     }
 
-    function changeEmployee() {
+    window.appFunctions.changeEmployee = function() {
       if (confirm('Switch employee? This will clear your selection.')) {
+        console.log('🔄 Clearing employee data');
         localStorage.removeItem('selectedEmployee');
         localStorage.removeItem('employeeData');
         currentEmployee = null;
@@ -409,15 +484,54 @@
         document.getElementById('mainApp').style.display = 'none';
         loadMetaThenPopulateSetup();
       }
-    }
+    };
 
+    window.appFunctions.showClientInfo = function() {
+      const cliSel = document.getElementById('client');
+      const clientName = cliSel.value;
+      
+      if (!clientName) {
+        alert('Please select a client first');
+        return;
+      }
+      
+      if (!window.meta || !window.meta.clients) {
+        alert('Client information not available');
+        return;
+      }
+      
+      const client = window.meta.clients.find(c => c.name === clientName);
+      if (!client) {
+        alert('Client information not found');
+        return;
+      }
+
+      document.getElementById('clientInfoTitle').textContent = '📍 ' + client.name;
+      document.getElementById('clientInfoBody').innerHTML =
+        `<strong>Address:</strong> ${client.address || 'No address on file'}<br><br>` +
+        `<strong>Notes:</strong><br>${client.notes || 'No notes'}`;
+
+      document.getElementById('clientPopup').style.display = 'flex';
+    };
+
+    window.appFunctions.closeClientInfo = function() {
+      document.getElementById('clientPopup').style.display = 'none';
+    };
+
+    // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 App starting...');
       checkUserSetup();
     });
 
+    // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
-        .then(reg => reg.update());
+        .then(reg => {
+          console.log('✅ Service Worker registered');
+          return reg.update();
+        })
+        .catch(err => console.error('❌ Service Worker registration failed:', err));
     }
   </script>
 </body>
