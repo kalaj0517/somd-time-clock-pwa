@@ -113,6 +113,11 @@
       box-shadow: 0 8px 30px rgba(0,0,0,0.1);
       text-align: center;
       border: 2px solid rgba(205, 153, 52, 0.2);
+      /* ✅ Force visibility on mobile */
+      opacity: 1 !important;
+      visibility: visible !important;
+      position: relative;
+      z-index: 999;
     }
 
     #employeeSetup h3 { color: var(--gold); margin-bottom: 12px; font-size: 22px; }
@@ -245,6 +250,37 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    /* ✅ Mobile-specific fixes */
+    @media (max-width: 768px) {
+      #employeeSetup {
+        display: block !important;
+        min-height: 400px;
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      
+      #employeeSetup select {
+        -webkit-appearance: menulist !important;
+        appearance: menulist !important;
+        min-height: 50px;
+        font-size: 16px !important; /* Prevents zoom on iOS */
+      }
+      
+      #employeeSetup button {
+        min-height: 50px;
+        font-size: 16px !important; /* Prevents zoom on iOS */
+      }
+    }
+
+    /* ✅ Utility classes */
+    .hidden {
+      display: none !important;
+    }
+    
+    .visible {
+      display: block !important;
+    }
   </style>
 </head>
 <body>
@@ -254,18 +290,23 @@
   </div>
 
   <div class="container">
-   <!-- Employee Setup -->
-<div id="employeeSetup" style="display:block !important; opacity:1 !important; visibility:visible !important; background:white; padding:32px; border-radius:20px; box-shadow:0 8px 30px rgba(0,0,0,0.1); text-align:center; border:2px solid rgba(205, 153, 52, 0.2);">
-  <h3 style="color:#cd9934; margin-bottom:12px; font-size:22px;">👋 Welcome!</h3>
-  <p style="color:#666; margin-bottom:16px;">Select your name to get started</p>
-  <p style="font-size:13px; color:#999; margin-bottom:16px;">You only need to do this once</p>
-  
-  <select id="employeeDropdown" style="width:100%; padding:16px; border:2px solid #e8e8e8; border-radius:14px; font-size:16px; margin-bottom:16px; background:#fafafa; -webkit-appearance:menulist; appearance:menulist;">
-    <option value="">-- Select your name --</option>
-  </select>
-  
-  <button onclick="window.appFunctions.saveEmployeeSelection()" style="width:100%; padding:16px; background:linear-gradient(135deg, #cd9934 0%, #daa842 100%); color:white; border:none; border-radius:14px; font-weight:600; cursor:pointer; font-size:17px;">💛 Continue</button>
-</div>
+    <!-- ✅ Debug info (remove after testing) -->
+    <div id="debugInfo" style="background: #fff3cd; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; display: none;">
+      <strong>Debug:</strong>
+      <div id="debugText"></div>
+    </div>
+
+    <!-- Employee Setup -->
+    <div id="employeeSetup" style="display:none;">
+      <h3>👋 Welcome!</h3>
+      <p>Select your name to get started</p>
+      <p style="font-size:13px; color:#999;">You only need to do this once</p>
+      <select id="employeeDropdown">
+        <option value="">-- Select your name --</option>
+      </select>
+      <button onclick="window.appFunctions.saveEmployeeSelection()">💛 Continue</button>
+    </div>
+
     <!-- Main App -->
     <div id="mainApp" style="display:none;">
       <div id="offlineBadge" style="display:none;" class="offline-badge">
@@ -332,13 +373,43 @@
     function checkUserSetup() {
       const savedEmployeeName = localStorage.getItem('selectedEmployee');
       
+      console.log('👤 Checking user setup...', {
+        savedEmployeeName,
+        pathname: window.location.pathname
+      });
+      
       if (!savedEmployeeName) {
-        document.getElementById('employeeSetup').style.display = 'block';
-        document.getElementById('mainApp').style.display = 'none';
+        console.log('📝 No saved employee - showing setup screen');
+        const setupEl = document.getElementById('employeeSetup');
+        const appEl = document.getElementById('mainApp');
+        
+        // ✅ Force display with multiple methods for mobile compatibility
+        setupEl.style.display = 'block';
+        setupEl.style.opacity = '1';
+        setupEl.style.visibility = 'visible';
+        setupEl.classList.remove('hidden');
+        
+        appEl.style.display = 'none';
+        
+        // Verify it's visible
+        console.log('✅ Setup screen display:', {
+          display: setupEl.style.display,
+          opacity: setupEl.style.opacity,
+          visibility: setupEl.style.visibility,
+          offsetHeight: setupEl.offsetHeight // 0 = not visible
+        });
+        
         loadMetaThenPopulateSetup();
       } else {
-        document.getElementById('employeeSetup').style.display = 'none';
-        document.getElementById('mainApp').style.display = 'block';
+        console.log('✅ Employee found - showing main app');
+        const setupEl = document.getElementById('employeeSetup');
+        const appEl = document.getElementById('mainApp');
+        
+        setupEl.style.display = 'none';
+        appEl.style.display = 'block';
+        appEl.style.opacity = '1';
+        appEl.style.visibility = 'visible';
+        
         loadEmployeeByName(savedEmployeeName);
       }
     }
@@ -522,6 +593,22 @@
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🚀 App starting...');
+      
+      // ✅ Show debug info on mobile
+      const debugInfo = document.getElementById('debugInfo');
+      const debugText = document.getElementById('debugText');
+      
+      if (debugInfo && debugText) {
+        debugInfo.style.display = 'block';
+        debugText.innerHTML = `
+          Screen: ${window.innerWidth}x${window.innerHeight}<br>
+          User Agent: ${navigator.userAgent.substring(0, 50)}...<br>
+          Saved Employee: ${localStorage.getItem('selectedEmployee') || 'None'}<br>
+          Setup Element Exists: ${document.getElementById('employeeSetup') ? 'Yes' : 'No'}<br>
+          Setup Display: ${document.getElementById('employeeSetup')?.style.display || 'not set'}
+        `;
+      }
+      
       checkUserSetup();
     });
 
