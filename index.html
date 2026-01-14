@@ -254,17 +254,18 @@
   </div>
 
   <div class="container">
-    <!-- Employee Setup -->
-    <div id="employeeSetup" style="display:none;">
-      <h3>👋 Welcome!</h3>
-      <p>Select your name to get started</p>
-      <p style="font-size:13px; color:#999;">You only need to do this once</p>
-      <select id="employeeDropdown">
-        <option value="">-- Select your name --</option>
-      </select>
-      <button onclick="window.appFunctions.saveEmployeeSelection()">💛 Continue</button>
-    </div>
-
+   <!-- Employee Setup -->
+<div id="employeeSetup" style="display:block !important; opacity:1 !important; visibility:visible !important; background:white; padding:32px; border-radius:20px; box-shadow:0 8px 30px rgba(0,0,0,0.1); text-align:center; border:2px solid rgba(205, 153, 52, 0.2);">
+  <h3 style="color:#cd9934; margin-bottom:12px; font-size:22px;">👋 Welcome!</h3>
+  <p style="color:#666; margin-bottom:16px;">Select your name to get started</p>
+  <p style="font-size:13px; color:#999; margin-bottom:16px;">You only need to do this once</p>
+  
+  <select id="employeeDropdown" style="width:100%; padding:16px; border:2px solid #e8e8e8; border-radius:14px; font-size:16px; margin-bottom:16px; background:#fafafa; -webkit-appearance:menulist; appearance:menulist;">
+    <option value="">-- Select your name --</option>
+  </select>
+  
+  <button onclick="window.appFunctions.saveEmployeeSelection()" style="width:100%; padding:16px; background:linear-gradient(135deg, #cd9934 0%, #daa842 100%); color:white; border:none; border-radius:14px; font-weight:600; cursor:pointer; font-size:17px;">💛 Continue</button>
+</div>
     <!-- Main App -->
     <div id="mainApp" style="display:none;">
       <div id="offlineBadge" style="display:none;" class="offline-badge">
