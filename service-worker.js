@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3.0.0';
+const CACHE_VERSION = 'v3.1.0-mobile-fix';  // ✅ Updated version to force refresh
 const CACHE_NAME = `time-clock-${CACHE_VERSION}`;
 
 const BASE_PATH = '/somd-time-clock-pwa';
@@ -14,6 +14,7 @@ const CACHE_FILES = [
 ];
 
 self.addEventListener('install', (event) => {
+  console.log('📦 Service Worker installing v3.1.0-mobile-fix');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(CACHE_FILES))
@@ -22,9 +23,13 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  console.log('✅ Service Worker activating - clearing old caches');
   event.waitUntil(
     caches.keys()
-      .then(names => Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))))
+      .then(names => {
+        console.log('🗑️ Deleting old caches:', names.filter(n => n !== CACHE_NAME));
+        return Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)));
+      })
       .then(() => self.clients.claim())
   );
 });
