@@ -313,7 +313,7 @@
     <div id="emailPrompt" style="display:none;">
       <h3>👋 Welcome!</h3>
       <p>Enter your work email to view your hours</p>
-      <input type="email" id="emailInput" placeholder="your.email@gmail.com">
+      <input type="email" id="emailInput" placeholder="your.email@somdhomehealth.com">
       <button onclick="saveEmail()">💛 Continue</button>
     </div>
 
@@ -372,7 +372,7 @@
     </div>
 
     <div class="version-badge" style="text-align:center; font-size:12px; color:#999; margin-top:24px; padding:8px;">
-      v2.0.0 • SOMD Home Health Time Clock 💛
+      v2.0.1 • SOMD Home Health Time Clock 💛
     </div>
   </div>
 
@@ -388,15 +388,19 @@
         el.innerHTML = msg;
         el.className = cls;
       }
+      console.log(`Status: ${msg} (${cls})`);
     }
 
     function checkEmail() {
+      console.log('🔍 Checking for saved email...');
       userEmail = localStorage.getItem('userEmail');
       
       if (!userEmail) {
+        console.log('❌ No email found');
         document.getElementById('emailPrompt').style.display = 'block';
         document.getElementById('mainContent').style.display = 'none';
       } else {
+        console.log('✅ Email found:', userEmail);
         document.getElementById('emailPrompt').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
         loadRange('today');
@@ -412,6 +416,7 @@
         return;
       }
       
+      console.log('💾 Saving email:', email);
       localStorage.setItem('userEmail', email);
       userEmail = email;
       
@@ -437,13 +442,7 @@
       setStatus('<span class="loading"></span> Loading...', 'warn');
       
       try {
-        const params = new URLSearchParams({
-          action: 'getMyTimes',
-          email: userEmail,
-          range: range
-        });
-        
-        console.log('Fetching:', `${API_URL}?${params.toString()}`);
+        // ✅ Use POST method with proper encoding
         const body = new URLSearchParams({
           action: 'getMyTimes',
           email: userEmail,
@@ -451,12 +450,21 @@
           t: Date.now()
         });
         
-       const response = await fetch(API_URL, {
+        console.log('📡 Fetching times for:', userEmail, 'range:', range);
+        
+        const response = await fetch(API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
           body,
           cache: 'no-store'
         });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ Received data:', data);
         
         displayTimes(data);
         
@@ -467,6 +475,8 @@
     }
 
     function displayTimes(data) {
+      console.log('📋 Displaying times:', data);
+      
       const hours = typeof data.totalHours === 'number' ? data.totalHours : 0;
       const miles = typeof data.totalMileage === 'number' ? data.totalMileage : 0;
       
@@ -553,6 +563,8 @@
       setStatus(`✅ Loaded ${data.rows.length} ${data.rows.length === 1 ? 'entry' : 'entries'}`, 'ok');
     }
 
+    // Initialize
+    console.log('🚀 My Times page loaded');
     checkEmail();
   </script>
 </body>
