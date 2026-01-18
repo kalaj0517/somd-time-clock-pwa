@@ -208,8 +208,7 @@ const recentActions = new Map();
 function isDuplicate(employeeName, clientName, action) {
   const key = `${employeeName}|${clientName}|${action}`;
   const last = recentActions.get(key);
-  if (last && (Date.now() - last) < 10000) {
-    console.warn('⚠️ Duplicate action prevented:', key);
+  if (last && (Date.now() - last) < 5000) {  // ⬅️ 5 seconds
     return true;
   }
   recentActions.set(key, Date.now());
@@ -232,63 +231,140 @@ async function checkForOpenSession(employeeName) {
 
 // ---------- Clock submit ----------
 // ✅ Make this globally accessible for onclick handlers
+// ---------- Clock submit ----------
 window.submitClock = async function(action) {
   console.log(`⏰ Clock ${action} initiated`);
   
-  const employeeName = document.getElementById('employee')?.value || '';
-  const employeeEmail = document.getElementById('employeeEmail')?.value || '';
-  const role = document.getElementById('role')?.value || '';
-  const clientName = document.getElementById('client')?.value || '';
-  const note = document.getElementById('note')?.value || '';
-
-  const mileageVal = document.getElementById('mileage')?.value || '';
-  const mileage = (action === 'Clock Out' && mileageVal !== '') ? parseFloat(mileageVal) : '';
-
-  console.log('📋 Form data:', { employeeName, employeeEmail, role, clientName, note, mileage });
-
-  // Validation
-  if (!employeeName) {
-    console.error('❌ No employee name');
-    return window.setStatus('⚠️ Please select your name first.', 'err');
-  }
+  // ✅ Disable buttons to prevent double-clicks
+  const buttons = document.querySelectorAll('.clockInBtn, .clockOutBtn');
+  const originalButtonTexts = new Map();
   
-  if (!clientName) {
-    console.error('❌ No client selected');
-    return window.setStatus('⚠️ Please select a client.', 'err');
-  }
+  buttons.forEach(btn => {
+    originalButtonTexts.set(btn, btn.textContent);
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+  });
+  
+  window.setStatus(`📤 ${action}ing... Please wait`, 'warn');
+  
+  try {
+    const employeeName = document.getElementById('employee')?.value || '';
+    const employeeEmail = document.getElementById('employeeEmail')?.value || '';
+    const role = document.getElementById('role')?.value || '';
+    const clientName = document.getElementById('client')?.value || '';
+    const note = document.getElementById('note')?.value || '';
+    const mileageVal = document.getElementById('mileage')?.value || '';
+    const mileage = (action === 'Clock Out' && mileageVal !== '') ? parseFloat(mileageVal) : '';
 
-  // Duplicate check
-  if (isDuplicate(employeeName, clientName, action)) {
-    return window.setStatus(`⚠️ You just ${action.toLowerCase()}ed. Wait 10 seconds.`, 'warn');
-  }
+    console.log('📋 Form data:', { employeeName, employeeEmail, role, clientName, note, mileage });
 
-  // Check for open session on Clock In
-  let previousClockOut = '';
-
-  if (action === 'Clock In' && navigator.onLine) {
-    try {
-      const openSession = await checkForOpenSession(employeeName);
-      if (openSession) {
-        const clockInTime = new Date(openSession.clockIn);
-        console.log('⚠️ Found open session:', openSession);
-        
-        const input = prompt(
-          `⚠️ You're still clocked in at ${openSession.client} since ${clockInTime.toLocaleTimeString()}.\n\n` +
-          `Enter the time you LEFT that client (HH:MM or 2:15 PM).\n` +
-          `Press Cancel to auto-close it at the current time and continue.`
-        );
-        
-        if (input && input.trim()) {
-          previousClockOut = input.trim();
-          console.log('✏️ User provided previous clock out time:', previousClockOut);
-        } else {
-          console.log('⏰ Will auto-close previous session at current time');
-        }
-      }
-    } catch (e) {
-      console.error('❌ Error checking for open session:', e);
+    // Validation
+    if (!employeeName) {
+      console.error('❌ No employee name');
+      return window.setStatus('⚠️ Please select your name first.', 'err');
     }
+    
+    if (!clientName) {
+      console.error('❌ No client selected');
+      return window.setStatus('⚠️ Please select a client.', 'err');
+    }
+
+    // Duplicate check
+    if (isDuplicate(employeeName, clientName, action)) {
+      return window.setStatus(`⚠️ You just ${action.toLowerCase()}ed. Wait 5 seconds.`, 'warn');
+    }
+
+    // Check for open session on Clock In
+    let previousClockOut = '';
+
+    if (action === 'Clock In' && navigator.onLine) {
+      try {
+        const openSession = await checkForOpenSession(employeeName);
+        if (openSession) {
+          const clockInTime = new Date(openSession.clockIn);
+          console.log('⚠️ Found open session:', openSession);
+          
+          const input = prompt(
+            `⚠️ You're still clocked in at ${openSession.client} since ${clockInTime.toLocaleTimeString()}.\n\n` +
+            `Enter the time you LEFT that client (HH:MM or 2:15 PM).\n` +
+            `Press Cancel to auto-close it at the current time and continue.`
+          );
+          
+          if (input && input.trim()) {
+            previousClockOut = input.trim();
+            console.log('✏️ User provided previous clock out time:', previousClockOut);
+          } else {
+            console.log('⏰ Will auto-close previous session at current time');
+          }
+        }
+      } catch (e) {
+        console.error('❌ Error checking for open session:', e);
+      }
+    }
+
+    // Build payload
+    const payload = {
+      id: uuid(),
+      timestamp: Date.now(),
+      employeeName,
+      employeeEmail: (employeeEmail || '').trim().toLowerCase(),
+      role,
+      clientName,
+      action,
+      lat: lat ?? '',
+      lng: lng ?? '',
+      note,
+      mileage,
+      previousClockOut
+    };
+
+    console.log('📦 Payload:', payload);
+    window.setStatus(`📤 ${action}ing...`, 'warn');
+
+    // Save to IndexedDB (always)
+    await saveToIndexedDB(payload);
+    console.log('💾 Saved to IndexedDB');
+
+    // Try to send
+    if (!navigator.onLine) {
+      console.log('📴 Offline - will sync later');
+      return window.setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
+    }
+
+    const success = await sendToServer(payload);
+    if (success) {
+      console.log('✅ Clock action confirmed by server');
+      window.setStatus(`✅ ${action} confirmed.`, 'ok');
+      await markAsSynced(payload.id);
+
+      // Clear fields after successful clock out
+      if (action === 'Clock Out') {
+        const m = document.getElementById('mileage'); if (m) m.value = '';
+        const n = document.getElementById('note'); if (n) n.value = '';
+        console.log('🧹 Cleared mileage and note fields');
+      }
+    } else {
+      console.warn('⚠️ Server did not confirm - will retry later');
+      window.setStatus(`⚠️ ${action} saved (pending sync). Keep app open briefly.`, 'warn');
+    }
+    
+  } catch (error) {
+    console.error('❌ Submit clock error:', error);
+    window.setStatus(`❌ Error: ${error.message}. Please try again.`, 'err');
+    
+  } finally {
+    // Re-enable buttons after 2 seconds
+    setTimeout(() => {
+      buttons.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+        btn.textContent = originalButtonTexts.get(btn);
+      });
+    }, 2000);
   }
+};
 
   // Build payload
   const payload = {
