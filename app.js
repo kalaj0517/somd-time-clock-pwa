@@ -230,8 +230,6 @@ async function checkForOpenSession(employeeName) {
 }
 
 // ---------- Clock submit ----------
-// ✅ Make this globally accessible for onclick handlers
-// ---------- Clock submit ----------
 window.submitClock = async function(action) {
   console.log(`⏰ Clock ${action} initiated`);
   
@@ -239,8 +237,23 @@ window.submitClock = async function(action) {
   const buttons = document.querySelectorAll('.clockInBtn, .clockOutBtn');
   const originalButtonTexts = new Map();
   
+  // Store original state
   buttons.forEach(btn => {
     originalButtonTexts.set(btn, btn.textContent);
+  });
+  
+  // Function to re-enable buttons
+  const reEnableButtons = () => {
+    buttons.forEach(btn => {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.textContent = originalButtonTexts.get(btn);
+    });
+  };
+  
+  // Disable buttons
+  buttons.forEach(btn => {
     btn.disabled = true;
     btn.style.opacity = '0.5';
     btn.style.cursor = 'not-allowed';
@@ -262,17 +275,23 @@ window.submitClock = async function(action) {
     // Validation
     if (!employeeName) {
       console.error('❌ No employee name');
-      return window.setStatus('⚠️ Please select your name first.', 'err');
+      window.setStatus('⚠️ Please select your name first.', 'err');
+      reEnableButtons();  // ✅ RE-ENABLE BEFORE RETURN!
+      return;
     }
     
     if (!clientName) {
       console.error('❌ No client selected');
-      return window.setStatus('⚠️ Please select a client.', 'err');
+      window.setStatus('⚠️ Please select a client.', 'err');
+      reEnableButtons();  // ✅ RE-ENABLE BEFORE RETURN!
+      return;
     }
 
     // Duplicate check
     if (isDuplicate(employeeName, clientName, action)) {
-      return window.setStatus(`⚠️ You just ${action.toLowerCase()}ed. Wait 5 seconds.`, 'warn');
+      window.setStatus(`⚠️ You just ${action.toLowerCase()}ed. Wait 5 seconds.`, 'warn');
+      reEnableButtons();  // ✅ RE-ENABLE BEFORE RETURN!
+      return;
     }
 
     // Check for open session on Clock In
@@ -329,7 +348,9 @@ window.submitClock = async function(action) {
     // Try to send
     if (!navigator.onLine) {
       console.log('📴 Offline - will sync later');
-      return window.setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
+      window.setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
+      reEnableButtons();  // ✅ RE-ENABLE BEFORE RETURN!
+      return;
     }
 
     const success = await sendToServer(payload);
@@ -356,16 +377,10 @@ window.submitClock = async function(action) {
   } finally {
     // Re-enable buttons after 2 seconds
     setTimeout(() => {
-      buttons.forEach(btn => {
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.style.cursor = 'pointer';
-        btn.textContent = originalButtonTexts.get(btn);
-      });
+      reEnableButtons();
     }, 2000);
   }
 };
-
   // Build payload
   const payload = {
     id: uuid(),
