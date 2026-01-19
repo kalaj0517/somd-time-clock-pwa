@@ -391,44 +391,64 @@
       }
     }
 
-    async function loadMetaThenPopulateSetup() {
-      console.log('🔄 Loading meta...');
-      
-      let attempts = 0;
-      while (!window.meta && attempts < 20) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-        attempts++;
-      }
-      
-      if (!window.meta) {
-        console.log('⚠️ Trying to load meta...');
-        if (typeof loadMeta === 'function') await loadMeta();
-      }
-
-      if (!window.meta || !window.meta.employees) {
-        console.error('❌ No employee data');
-        if (typeof setStatus === 'function') setStatus('❌ Unable to load. Please refresh.', 'err');
-        return;
-      }
-
-      console.log('✅ Meta loaded:', window.meta);
-      
-      const dropdown = document.getElementById('employeeDropdown');
-      dropdown.innerHTML = '<option value="">-- Select your name --</option>';
-      
-      window.meta.employees.forEach(emp => {
-        const option = document.createElement('option');
-        option.value = emp.fullName;
-        option.textContent = emp.fullName;
-        option.dataset.shortName = emp.name;
-        option.dataset.fullName = emp.fullName;
-        option.dataset.email = emp.email || '';
-        option.dataset.role = emp.role || '';
-        dropdown.appendChild(option);
-      });
-
-      console.log('✅ Dropdown populated:', window.meta.employees.length);
+  async function loadMetaThenPopulateSetup() {  // ✅ MUST be async!
+  console.log('🔄 Loading meta for employee setup...');
+  
+  // Wait for meta to load from app.js
+  let attempts = 0;
+  while (!window.meta && attempts < 20) {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    attempts++;
+  }
+  
+  // If still no meta, try to load it
+  if (!window.meta) {
+    console.log('⚠️ Meta not loaded, attempting to load...');
+    if (typeof window.loadMeta === 'function') {
+      await window.loadMeta();
     }
+  }
+
+  // Check one more time
+  if (!window.meta || !window.meta.employees) {
+    console.error('❌ Unable to load employee data');
+    if (typeof window.setStatus === 'function') {
+      window.setStatus('❌ Unable to load employee data. Please refresh.', 'err');
+    }
+    return;
+  }
+
+  console.log('✅ Meta loaded:', window.meta);
+  
+  const dropdown = document.getElementById('employeeDropdown');
+  dropdown.innerHTML = '<option value="">-- Select your name --</option>';
+  
+  window.meta.employees.forEach(emp => {
+    console.log('Adding employee:', emp);
+    const option = document.createElement('option');
+    
+    // Store ALL the data we need
+    option.value = emp.fullName;
+    option.textContent = emp.fullName;
+    option.dataset.shortName = emp.name;
+    option.dataset.fullName = emp.fullName;
+    option.dataset.email = emp.email || '';
+    option.dataset.role = emp.role || '';
+    
+    dropdown.appendChild(option);
+  });
+
+  console.log('✅ Dropdown populated with', window.meta.employees.length, 'employees');
+}
+```
+
+---
+
+## 🎯 **The Real Issue:**
+
+The console shows:
+```
+❌ No employee data
 
     window.appFunctions.saveEmployeeSelection = function() {
       const dropdown = document.getElementById('employeeDropdown');
