@@ -1,16 +1,12 @@
-// CareTeam Time Clock PWA - Final Fixed Version v3.0.1
-// Key fixes:
-// - Exposes meta globally for index.html to use
-// - Better meta loading with retry logic
-// - Consistent employee data handling
-// - Improved error logging
+// CareTeam Time Clock PWA - Clean Version v2.1.0
+// Fixed: Removed duplicate code, proper button re-enabling
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbyQ_Q7Wi7XQAOnYbxZWRjCM2MlBdU3x0mFhgzOZuqX8ApEFJimHEvlQY1SF6s6oEtqH/exec';
 
 let lat = null, lng = null;
 let syncInProgress = false;
 
-// ✅ Make meta globally accessible for index.html
+// Make meta globally accessible
 window.meta = null;
 
 // ---------- Utilities ----------
@@ -20,7 +16,6 @@ function uuid() {
     : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-// ✅ Make setStatus globally accessible
 window.setStatus = function(msg, cls) {
   const el = document.getElementById('status');
   if (!el) return;
@@ -38,23 +33,18 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ---------- Online/Offline badge ----------
+// ---------- Online/Offline ----------
 function updateOnlineStatus() {
   const badge = document.getElementById('offlineBadge');
   if (badge) {
     badge.style.display = navigator.onLine ? 'none' : 'block';
-    console.log('Online status:', navigator.onLine ? 'ONLINE' : 'OFFLINE');
   }
 }
 window.addEventListener('online', () => { 
   updateOnlineStatus(); 
-  console.log('🌐 Back online!');
   syncPendingActions(); 
 });
-window.addEventListener('offline', () => {
-  updateOnlineStatus();
-  console.log('📴 Gone offline');
-});
+window.addEventListener('offline', updateOnlineStatus);
 
 // ---------- Geolocation ----------
 function getLoc() {
@@ -63,7 +53,6 @@ function getLoc() {
     return;
   }
   window.setStatus('📍 Getting location...', 'warn');
-  console.log('📍 Requesting geolocation...');
 
   navigator.geolocation.getCurrentPosition(
     (pos) => {
@@ -95,7 +84,6 @@ async function apiPost(action, params = {}) {
     });
 
     if (!res.ok) {
-      console.error(`❌ API HTTP Error: ${res.status}`);
       throw new Error(`HTTP ${res.status}`);
     }
     
@@ -108,13 +96,11 @@ async function apiPost(action, params = {}) {
   }
 }
 
-// ---------- Load meta with retry logic ----------
-// ✅ Make this globally accessible
+// ---------- Load meta ----------
 window.loadMeta = async function() {
   console.log('🔄 Loading meta data...');
   
   try {
-    // Try to use cached data first
     const cached = localStorage.getItem('meta-cache');
     if (cached) {
       try {
@@ -126,7 +112,6 @@ window.loadMeta = async function() {
       }
     }
 
-    // If online, fetch fresh data
     if (navigator.onLine) {
       console.log('🌐 Fetching fresh meta from server...');
       
@@ -159,18 +144,16 @@ window.loadMeta = async function() {
       }
     }
     
-    // If we have cached data, use it
     if (window.meta) {
       console.log('✅ Using cached meta data');
       populateDropdowns();
     } else {
       console.error('❌ No meta data available');
-      window.setStatus('❌ Unable to load data. Please check your connection and refresh.', 'err');
+      window.setStatus('❌ Unable to load data. Please refresh.', 'err');
     }
   } catch (e) {
     console.error('❌ loadMeta error:', e);
     if (window.meta) {
-      console.log('⚠️ Falling back to cached meta');
       populateDropdowns();
     }
   }
@@ -184,7 +167,6 @@ function populateDropdowns() {
     return;
   }
 
-  // Populate clients dropdown
   const cliSel = document.getElementById('client');
   if (cliSel && window.meta.clients) {
     console.log(`📋 Populating ${window.meta.clients.length} clients...`);
@@ -199,16 +181,15 @@ function populateDropdowns() {
     });
     console.log('✅ Clients dropdown populated');
   }
-
-  // Note: Employee dropdown is handled in index.html during setup
 }
 
-// ---------- Duplicate prevention (client-side) ----------
+// ---------- Duplicate prevention ----------
 const recentActions = new Map();
 function isDuplicate(employeeName, clientName, action) {
   const key = `${employeeName}|${clientName}|${action}`;
   const last = recentActions.get(key);
-  if (last && (Date.now() - last) < 5000) {  // ⬅️ 5 seconds
+  if (last && (Date.now() - last) < 5000) {
+    console.warn('⚠️ Duplicate prevented:', key);
     return true;
   }
   recentActions.set(key, Date.now());
@@ -221,7 +202,7 @@ async function checkForOpenSession(employeeName) {
   console.log('🔍 Checking for open session:', employeeName);
   try {
     const result = await apiPost('checkOpenSession', { employeeName });
-    console.log('✅ Open session check result:', result);
+    console.log('✅ Open session result:', result);
     return result.openSession || null;
   } catch (e) {
     console.error('❌ Error checking open session:', e);
@@ -233,16 +214,13 @@ async function checkForOpenSession(employeeName) {
 window.submitClock = async function(action) {
   console.log(`⏰ Clock ${action} initiated`);
   
-  // ✅ Disable buttons to prevent double-clicks
   const buttons = document.querySelectorAll('.clockInBtn, .clockOutBtn');
   const originalButtonTexts = new Map();
   
-  // Store original state
   buttons.forEach(btn => {
     originalButtonTexts.set(btn, btn.textContent);
   });
   
-  // Function to re-enable buttons
   const reEnableButtons = () => {
     buttons.forEach(btn => {
       btn.disabled = false;
@@ -252,7 +230,6 @@ window.submitClock = async function(action) {
     });
   };
   
-  // Disable buttons
   buttons.forEach(btn => {
     btn.disabled = true;
     btn.style.opacity = '0.5';
@@ -272,29 +249,24 @@ window.submitClock = async function(action) {
 
     console.log('📋 Form data:', { employeeName, employeeEmail, role, clientName, note, mileage });
 
-    // Validation
     if (!employeeName) {
-      console.error('❌ No employee name');
       window.setStatus('⚠️ Please select your name first.', 'err');
-      reEnableButtons();  // ✅ RE-ENABLE BEFORE RETURN!
+      reEnableButtons();
       return;
     }
     
     if (!clientName) {
-      console.error('❌ No client selected');
       window.setStatus('⚠️ Please select a client.', 'err');
-      reEnableButtons();  // ✅ RE-ENABLE BEFORE RETURN!
+      reEnableButtons();
       return;
     }
 
-    // Duplicate check
     if (isDuplicate(employeeName, clientName, action)) {
       window.setStatus(`⚠️ You just ${action.toLowerCase()}ed. Wait 5 seconds.`, 'warn');
-      reEnableButtons();  // ✅ RE-ENABLE BEFORE RETURN!
+      reEnableButtons();
       return;
     }
 
-    // Check for open session on Clock In
     let previousClockOut = '';
 
     if (action === 'Clock In' && navigator.onLine) {
@@ -313,8 +285,6 @@ window.submitClock = async function(action) {
           if (input && input.trim()) {
             previousClockOut = input.trim();
             console.log('✏️ User provided previous clock out time:', previousClockOut);
-          } else {
-            console.log('⏰ Will auto-close previous session at current time');
           }
         }
       } catch (e) {
@@ -322,7 +292,6 @@ window.submitClock = async function(action) {
       }
     }
 
-    // Build payload
     const payload = {
       id: uuid(),
       timestamp: Date.now(),
@@ -339,100 +308,44 @@ window.submitClock = async function(action) {
     };
 
     console.log('📦 Payload:', payload);
-    window.setStatus(`📤 ${action}ing...`, 'warn');
 
-    // Save to IndexedDB (always)
     await saveToIndexedDB(payload);
     console.log('💾 Saved to IndexedDB');
 
-    // Try to send
     if (!navigator.onLine) {
       console.log('📴 Offline - will sync later');
       window.setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
-      reEnableButtons();  // ✅ RE-ENABLE BEFORE RETURN!
+      reEnableButtons();
       return;
     }
 
     const success = await sendToServer(payload);
     if (success) {
-      console.log('✅ Clock action confirmed by server');
+      console.log('✅ Confirmed by server');
       window.setStatus(`✅ ${action} confirmed.`, 'ok');
       await markAsSynced(payload.id);
 
-      // Clear fields after successful clock out
       if (action === 'Clock Out') {
         const m = document.getElementById('mileage'); if (m) m.value = '';
         const n = document.getElementById('note'); if (n) n.value = '';
-        console.log('🧹 Cleared mileage and note fields');
       }
     } else {
-      console.warn('⚠️ Server did not confirm - will retry later');
-      window.setStatus(`⚠️ ${action} saved (pending sync). Keep app open briefly.`, 'warn');
+      console.warn('⚠️ Not confirmed - will retry');
+      window.setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
     }
     
   } catch (error) {
-    console.error('❌ Submit clock error:', error);
-    window.setStatus(`❌ Error: ${error.message}. Please try again.`, 'err');
+    console.error('❌ Error:', error);
+    window.setStatus(`❌ Error. Please try again.`, 'err');
     
   } finally {
-    // Re-enable buttons after 2 seconds
-    setTimeout(() => {
-      reEnableButtons();
-    }, 2000);
-  }
-};
-  // Build payload
-  const payload = {
-    id: uuid(),
-    timestamp: Date.now(),
-    employeeName,
-    employeeEmail: (employeeEmail || '').trim().toLowerCase(),
-    role,
-    clientName,
-    action,
-    lat: lat ?? '',
-    lng: lng ?? '',
-    note,
-    mileage,
-    previousClockOut
-  };
-
-  console.log('📦 Payload:', payload);
-  window.setStatus(`📤 ${action}ing...`, 'warn');
-
-  // Save to IndexedDB (always)
-  await saveToIndexedDB(payload);
-  console.log('💾 Saved to IndexedDB');
-
-  // Try to send
-  if (!navigator.onLine) {
-    console.log('📴 Offline - will sync later');
-    return window.setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
-  }
-
-  const success = await sendToServer(payload);
-  if (success) {
-    console.log('✅ Clock action confirmed by server');
-    window.setStatus(`✅ ${action} confirmed.`, 'ok');
-    await markAsSynced(payload.id);
-
-    // Clear fields after successful clock out
-    if (action === 'Clock Out') {
-      const m = document.getElementById('mileage'); if (m) m.value = '';
-      const n = document.getElementById('note'); if (n) n.value = '';
-      console.log('🧹 Cleared mileage and note fields');
-    }
-  } else {
-    console.warn('⚠️ Server did not confirm - will retry later');
-    window.setStatus(`⚠️ ${action} saved (pending sync). Keep app open briefly.`, 'warn');
+    setTimeout(reEnableButtons, 2000);
   }
 };
 
-// ---------- Send to server (POST) ----------
+// ---------- Send to server ----------
 async function sendToServer(payload, retry = 0) {
   const maxRetries = 6;
-  
-  console.log(`📡 Sending to server (attempt ${retry + 1}/${maxRetries + 1})`);
 
   try {
     const result = await apiPost('clock', {
@@ -457,35 +370,25 @@ async function sendToServer(payload, retry = 0) {
     const msg = (result?.message || '').toString();
     console.warn('⚠️ Server rejected:', msg);
     
-    // Don't retry hard rejects
-    const hardRejects = [
-      'Outside geofence',
-      'Wait',
-      'just clocked',
-      'You just'
-    ];
+    const hardRejects = ['Outside geofence', 'Wait', 'just clocked', 'You just'];
     
     if (hardRejects.some(phrase => msg.includes(phrase))) {
-      console.log('🛑 Hard reject - not retrying');
+      console.log('🛑 Hard reject');
       return false;
     }
 
-    // Retry on soft failures
     if (retry < maxRetries) {
       const delay = (retry + 1) * 1500;
-      console.log(`⏳ Retrying in ${delay}ms...`);
       await new Promise(r => setTimeout(r, delay));
       return sendToServer(payload, retry + 1);
     }
     
-    console.error('❌ Max retries reached');
     return false;
   } catch (e) {
-    console.error(`❌ Send error (attempt ${retry + 1}):`, e);
+    console.error(`❌ Send error:`, e);
     
     if (retry < maxRetries && navigator.onLine) {
       const delay = (retry + 1) * 1500;
-      console.log(`⏳ Retrying in ${delay}ms...`);
       await new Promise(r => setTimeout(r, delay));
       return sendToServer(payload, retry + 1);
     }
@@ -520,7 +423,6 @@ async function saveToIndexedDB(data) {
       tx.oncomplete = () => res(true);
       tx.onerror = () => rej(tx.error);
     });
-    console.log('💾 IndexedDB save successful');
   } catch (e) {
     console.error('❌ IndexedDB save error:', e);
   }
@@ -542,7 +444,6 @@ async function markAsSynced(id) {
       record.synced = true;
       record.syncedAt = Date.now();
       store.put(record);
-      console.log('✅ Marked as synced:', id);
     }
 
     await new Promise((res) => (tx.oncomplete = () => res(true)));
@@ -552,13 +453,10 @@ async function markAsSynced(id) {
 }
 
 async function syncPendingActions() {
-  if (syncInProgress || !navigator.onLine) {
-    console.log('⏸️ Sync skipped:', syncInProgress ? 'already in progress' : 'offline');
-    return;
-  }
+  if (syncInProgress || !navigator.onLine) return;
   
   syncInProgress = true;
-  console.log('🔄 Starting sync of pending actions...');
+  console.log('🔄 Syncing pending actions...');
 
   try {
     const db = await openDB();
@@ -572,16 +470,14 @@ async function syncPendingActions() {
     });
 
     const pending = all.filter(x => !x.synced && (x.retries ?? 0) < 10);
-    console.log(`📋 Found ${pending.length} pending actions to sync`);
+    console.log(`📋 Found ${pending.length} pending`);
     
     for (const item of pending) {
-      console.log('📤 Syncing:', item);
       const ok = await sendToServer(item);
       
       if (ok) {
         await markAsSynced(item.id);
       } else {
-        // Bump retries
         const db2 = await openDB();
         const tx2 = db2.transaction('pending-actions', 'readwrite');
         const store2 = tx2.objectStore('pending-actions');
@@ -593,13 +489,10 @@ async function syncPendingActions() {
         if (rec) {
           rec.retries = (rec.retries ?? 0) + 1;
           store2.put(rec);
-          console.log(`⏭️ Bumped retry count to ${rec.retries} for:`, item.id);
         }
         await new Promise((res) => (tx2.oncomplete = () => res(true)));
       }
     }
-    
-    console.log('✅ Sync complete');
   } catch (e) {
     console.error('❌ syncPendingActions error:', e);
   } finally {
@@ -607,29 +500,19 @@ async function syncPendingActions() {
   }
 }
 
-// Silent sync schedule
 setInterval(() => { 
-  if (navigator.onLine) {
-    console.log('⏰ Auto-sync triggered');
-    syncPendingActions(); 
-  }
+  if (navigator.onLine) syncPendingActions(); 
 }, 30 * 1000);
 
 document.addEventListener('visibilitychange', () => { 
-  if (!document.hidden && navigator.onLine) {
-    console.log('👀 App visible - triggering sync');
-    syncPendingActions(); 
-  }
+  if (!document.hidden && navigator.onLine) syncPendingActions(); 
 });
 
 // ---------- Init ----------
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 App.js loaded and initializing...');
+  console.log('🚀 App.js loaded');
   updateOnlineStatus();
   getLoc();
-  window.loadMeta(); // Use the global version
-  setTimeout(() => {
-    console.log('⏰ Initial sync check');
-    syncPendingActions();
-  }, 2000);
+  window.loadMeta();
+  setTimeout(syncPendingActions, 2000);
 });
