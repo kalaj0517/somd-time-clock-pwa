@@ -248,13 +248,11 @@
       to { transform: rotate(360deg); }
     }
 
-    /* ✅ Mobile-specific fixes */
     @media (max-width: 768px) {
       #employeeSetup select {
         min-height: 50px;
         font-size: 16px !important;
       }
-      
       #employeeSetup button {
         min-height: 50px;
         font-size: 16px !important;
@@ -269,12 +267,6 @@
   </div>
 
   <div class="container">
-    <!-- ✅ Debug info -->
-    <div id="debugInfo" style="background: #fff3cd; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 12px; display: none;">
-      <strong>Debug:</strong>
-      <div id="debugText"></div>
-    </div>
-
     <!-- Employee Setup -->
     <div id="employeeSetup" style="display:none;">
       <h3>👋 Welcome!</h3>
@@ -283,7 +275,7 @@
       <select id="employeeDropdown">
         <option value="">-- Select your name --</option>
       </select>
-      <button onclick="window.appFunctions.saveEmployeeSelection()">💛 Continue</button>
+      <button onclick="saveEmployeeSelection()">💛 Continue</button>
     </div>
 
     <!-- Main App -->
@@ -295,7 +287,7 @@
       <div class="employee-badge">
         <h3 id="employeeName">Loading...</h3>
         <p id="employeeRole"></p>
-        <button onclick="window.appFunctions.changeEmployee()">Not you? Switch employee</button>
+        <button onclick="changeEmployee()">Not you? Switch employee</button>
       </div>
 
       <div id="timeDisplay">--:--:--</div>
@@ -308,7 +300,7 @@
         <label>🏠 Select Client</label>
         <div class="input-wrapper">
           <select id="client"></select>
-          <button class="clientInfoBtn" onclick="window.appFunctions.showClientInfo()">ℹ️</button>
+          <button class="clientInfoBtn" onclick="showClientInfo()">ℹ️</button>
         </div>
 
         <label>💼 Your Role (optional)</label>
@@ -335,14 +327,13 @@
     <div class="popupCard">
       <h3 id="clientInfoTitle">📍 Client Info</h3>
       <p id="clientInfoBody"></p>
-      <button onclick="window.appFunctions.closeClientInfo()" style="margin-top:20px;width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);color:white;font-weight:700;">Close</button>
+      <button onclick="closeClientInfo()" style="margin-top:20px;width:100%;padding:16px;border-radius:14px;border:none;background:linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);color:white;font-weight:700;">Close</button>
     </div>
   </div>
 
   <script src="app.js"></script>
 
   <script>
-    window.appFunctions = window.appFunctions || {};
     let currentEmployee = null;
 
     function checkUserSetup() {
@@ -356,31 +347,11 @@
       if (!savedEmployeeName) {
         console.log('📝 Showing setup screen');
         
-        // ✅ USE setProperty WITH 'important' FLAG - THIS IS THE KEY!
         setupEl.style.setProperty('display', 'block', 'important');
         setupEl.style.setProperty('opacity', '1', 'important');
         setupEl.style.setProperty('visibility', 'visible', 'important');
-        setupEl.style.setProperty('z-index', '9999', 'important');
         
         appEl.style.setProperty('display', 'none', 'important');
-        
-        // Update debug info
-        setTimeout(() => {
-          const debugEl = document.getElementById('debugInfo');
-          const debugText = document.getElementById('debugText');
-          if (debugEl && debugText) {
-            debugEl.style.display = 'block';
-            debugText.innerHTML = `
-              Screen: ${window.innerWidth}x${window.innerHeight}<br>
-              User Agent: ${navigator.userAgent.substring(0, 50)}...<br>
-              Saved Employee: None<br>
-              Setup Element Exists: Yes<br>
-              Setup Display: ${setupEl.style.display}<br>
-              Setup Height: ${setupEl.offsetHeight}px<br>
-              ✅ FORCED WITH !IMPORTANT
-            `;
-          }
-        }, 100);
         
         loadMetaThenPopulateSetup();
       } else {
@@ -391,66 +362,51 @@
       }
     }
 
-  async function loadMetaThenPopulateSetup() {  // ✅ MUST be async!
-  console.log('🔄 Loading meta for employee setup...');
-  
-  // Wait for meta to load from app.js
-  let attempts = 0;
-  while (!window.meta && attempts < 20) {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    attempts++;
-  }
-  
-  // If still no meta, try to load it
-  if (!window.meta) {
-    console.log('⚠️ Meta not loaded, attempting to load...');
-    if (typeof window.loadMeta === 'function') {
-      await window.loadMeta();
+    async function loadMetaThenPopulateSetup() {
+      console.log('🔄 Loading meta for employee setup...');
+      
+      // Wait for meta
+      let attempts = 0;
+      while (!window.meta && attempts < 20) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
+      }
+      
+      if (!window.meta) {
+        console.log('⚠️ Trying to load meta...');
+        if (typeof window.loadMeta === 'function') {
+          await window.loadMeta();
+        }
+      }
+
+      if (!window.meta || !window.meta.employees) {
+        console.error('❌ No employee data');
+        if (typeof window.setStatus === 'function') {
+          window.setStatus('❌ Unable to load. Please refresh.', 'err');
+        }
+        return;
+      }
+
+      console.log('✅ Meta loaded:', window.meta);
+      
+      const dropdown = document.getElementById('employeeDropdown');
+      dropdown.innerHTML = '<option value="">-- Select your name --</option>';
+      
+      window.meta.employees.forEach(emp => {
+        const option = document.createElement('option');
+        option.value = emp.fullName;
+        option.textContent = emp.fullName;
+        option.dataset.shortName = emp.name;
+        option.dataset.fullName = emp.fullName;
+        option.dataset.email = emp.email || '';
+        option.dataset.role = emp.role || '';
+        dropdown.appendChild(option);
+      });
+
+      console.log('✅ Dropdown populated:', window.meta.employees.length);
     }
-  }
 
-  // Check one more time
-  if (!window.meta || !window.meta.employees) {
-    console.error('❌ Unable to load employee data');
-    if (typeof window.setStatus === 'function') {
-      window.setStatus('❌ Unable to load employee data. Please refresh.', 'err');
-    }
-    return;
-  }
-
-  console.log('✅ Meta loaded:', window.meta);
-  
-  const dropdown = document.getElementById('employeeDropdown');
-  dropdown.innerHTML = '<option value="">-- Select your name --</option>';
-  
-  window.meta.employees.forEach(emp => {
-    console.log('Adding employee:', emp);
-    const option = document.createElement('option');
-    
-    // Store ALL the data we need
-    option.value = emp.fullName;
-    option.textContent = emp.fullName;
-    option.dataset.shortName = emp.name;
-    option.dataset.fullName = emp.fullName;
-    option.dataset.email = emp.email || '';
-    option.dataset.role = emp.role || '';
-    
-    dropdown.appendChild(option);
-  });
-
-  console.log('✅ Dropdown populated with', window.meta.employees.length, 'employees');
-}
-```
-
----
-
-## 🎯 **The Real Issue:**
-
-The console shows:
-```
-❌ No employee data
-
-    window.appFunctions.saveEmployeeSelection = function() {
+    function saveEmployeeSelection() {
       const dropdown = document.getElementById('employeeDropdown');
       const selectedOption = dropdown.options[dropdown.selectedIndex];
       
@@ -481,9 +437,9 @@ The console shows:
       document.getElementById('employeeSetup').style.setProperty('display', 'none', 'important');
       document.getElementById('mainApp').style.setProperty('display', 'block', 'important');
       loadEmployeeByName(employeeData.fullName);
-    };
+    }
 
-    async function loadEmployeeByName(fullName) {
+    function loadEmployeeByName(fullName) {
       const stored = localStorage.getItem('employeeData');
       let employeeData = stored ? JSON.parse(stored) : null;
       
@@ -495,29 +451,26 @@ The console shows:
         document.getElementById('employeeEmail').value = employeeData.email;
         document.getElementById('role').value = employeeData.role || '';
         
-        if (typeof setStatus === 'function') {
-          setStatus(`👋 Welcome, ${employeeData.fullName.split(' ')[0]}!`, 'ok');
+        if (typeof window.setStatus === 'function') {
+          window.setStatus(`👋 Welcome, ${employeeData.fullName.split(' ')[0]}!`, 'ok');
         }
       }
     }
 
-    window.appFunctions.changeEmployee = function() {
+    function changeEmployee() {
       if (confirm('Switch employee? This will clear your selection.')) {
         localStorage.removeItem('selectedEmployee');
         localStorage.removeItem('employeeData');
         currentEmployee = null;
         
-        const setupEl = document.getElementById('employeeSetup');
-        const appEl = document.getElementById('mainApp');
-        
-        setupEl.style.setProperty('display', 'block', 'important');
-        appEl.style.setProperty('display', 'none', 'important');
+        document.getElementById('employeeSetup').style.setProperty('display', 'block', 'important');
+        document.getElementById('mainApp').style.setProperty('display', 'none', 'important');
         
         loadMetaThenPopulateSetup();
       }
-    };
+    }
 
-    window.appFunctions.showClientInfo = function() {
+    function showClientInfo() {
       const cliSel = document.getElementById('client');
       const clientName = cliSel.value;
       
@@ -543,11 +496,11 @@ The console shows:
         `<strong>Notes:</strong><br>${client.notes || 'No notes'}`;
 
       document.getElementById('clientPopup').style.display = 'flex';
-    };
+    }
 
-    window.appFunctions.closeClientInfo = function() {
+    function closeClientInfo() {
       document.getElementById('clientPopup').style.display = 'none';
-    };
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       console.log('🚀 App starting...');
