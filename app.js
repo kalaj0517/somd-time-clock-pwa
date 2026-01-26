@@ -1,13 +1,52 @@
-// CareTeam Time Clock PWA - Clean Version v3.2.0
-// Fixed: Removed duplicate code, proper button re-enabling
+// CareTeam Time Clock PWA - v4.0.0 NUCLEAR RESET
+// Automatic cache clearing on version mismatch
+// Forces all old cached versions to refresh
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbyQ_Q7Wi7XQAOnYbxZWRjCM2MlBdU3x0mFhgzOZuqX8ApEFJimHEvlQY1SF6s6oEtqH/exec';
+const APP_VERSION = '4.0.0';
 
 let lat = null, lng = null;
 let syncInProgress = false;
-
-// Make meta globally accessible
 window.meta = null;
+
+// ✅ FORCE CACHE CLEAR ON VERSION MISMATCH
+(function checkVersion() {
+  const storedVersion = localStorage.getItem('app-version');
+  
+  if (storedVersion !== APP_VERSION) {
+    console.log('🔄 VERSION MISMATCH! Forcing cache clear...');
+    console.log(`  Old: ${storedVersion || 'none'}, New: ${APP_VERSION}`);
+    
+    // Keep only critical user data
+    const keep = ['selectedEmployee', 'employeeData', 'userEmail'];
+    const toKeep = {};
+    keep.forEach(key => {
+      const val = localStorage.getItem(key);
+      if (val) toKeep[key] = val;
+    });
+    
+    // CLEAR EVERYTHING
+    localStorage.clear();
+    
+    // Clear IndexedDB too
+    indexedDB.deleteDatabase('TimeClockDB');
+    
+    // Restore user data
+    Object.keys(toKeep).forEach(key => {
+      localStorage.setItem(key, toKeep[key]);
+    });
+    
+    // Set new version
+    localStorage.setItem('app-version', APP_VERSION);
+    
+    // Force hard reload
+    console.log('🔄 Reloading with fresh cache...');
+    window.location.reload(true);
+    return;
+  }
+  
+  console.log('✅ Version OK:', APP_VERSION);
+})();
 
 // ---------- Utilities ----------
 function uuid() {
@@ -46,7 +85,7 @@ window.addEventListener('online', () => {
 });
 window.addEventListener('offline', updateOnlineStatus);
 
-// ---------- Geolocation ----------
+// ---------- Geolocation (FORCE FRESH GPS) ----------
 function getLoc() {
   if (!navigator.geolocation) {
     window.setStatus('GPS unavailable.', 'err');
@@ -58,15 +97,43 @@ function getLoc() {
     (pos) => {
       lat = pos.coords.latitude;
       lng = pos.coords.longitude;
-      console.log('✅ GPS acquired:', { lat, lng });
+      console.log('✅ GPS acquired:', { lat, lng, accuracy: pos.coords.accuracy });
       window.setStatus('✅ GPS ready', 'ok');
     },
     (error) => {
       console.error('❌ GPS error:', error);
       window.setStatus('⚠️ GPS unavailable. Enable location permissions.', 'err');
     },
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    { 
+      enableHighAccuracy: true, 
+      timeout: 15000, 
+      maximumAge: 0  // ✅ FORCE FRESH - no cached GPS!
+    }
   );
+}
+
+// ✅ Refresh GPS before EVERY clock attempt
+function refreshGPS() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({ lat: null, lng: null });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        lat = pos.coords.latitude;
+        lng = pos.coords.longitude;
+        console.log('🔄 GPS refreshed:', { lat, lng, accuracy: pos.coords.accuracy });
+        resolve({ lat, lng });
+      },
+      (error) => {
+        console.error('❌ GPS refresh failed:', error);
+        resolve({ lat, lng }); // Use last known if refresh fails
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  });
 }
 
 // ---------- API helper (POST) ----------
@@ -113,7 +180,7 @@ window.loadMeta = async function() {
     }
 
     if (navigator.onLine) {
-      console.log('🌐 Fetching fresh meta from server...');
+      console.log('🌐 Fetching fresh meta...');
       
       let attempts = 0;
       const maxAttempts = 3;
@@ -125,18 +192,16 @@ window.loadMeta = async function() {
           if (data && data.employees && data.clients) {
             window.meta = data;
             localStorage.setItem('meta-cache', JSON.stringify(data));
-            console.log('✅ Meta loaded from server:', {
+            console.log('✅ Meta loaded:', {
               employees: data.employees.length,
               clients: data.clients.length
             });
             populateDropdowns();
             return;
-          } else {
-            console.warn('⚠️ Invalid meta data structure:', data);
           }
         } catch (e) {
           attempts++;
-          console.error(`❌ Attempt ${attempts}/${maxAttempts} failed:`, e);
+          console.error(`❌ Attempt ${attempts} failed:`, e);
           if (attempts < maxAttempts) {
             await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
           }
@@ -145,31 +210,20 @@ window.loadMeta = async function() {
     }
     
     if (window.meta) {
-      console.log('✅ Using cached meta data');
       populateDropdowns();
     } else {
-      console.error('❌ No meta data available');
       window.setStatus('❌ Unable to load data. Please refresh.', 'err');
     }
   } catch (e) {
     console.error('❌ loadMeta error:', e);
-    if (window.meta) {
-      populateDropdowns();
-    }
   }
 };
 
 function populateDropdowns() {
-  console.log('📋 Populating dropdowns...');
-  
-  if (!window.meta) {
-    console.error('❌ Cannot populate: meta is null');
-    return;
-  }
+  if (!window.meta) return;
 
   const cliSel = document.getElementById('client');
   if (cliSel && window.meta.clients) {
-    console.log(`📋 Populating ${window.meta.clients.length} clients...`);
     cliSel.innerHTML = '<option value="">Select client...</option>';
     window.meta.clients.forEach(c => {
       const opt = document.createElement('option');
@@ -179,7 +233,6 @@ function populateDropdowns() {
       opt.dataset.notes = c.notes || '';
       cliSel.appendChild(opt);
     });
-    console.log('✅ Clients dropdown populated');
   }
 }
 
@@ -199,10 +252,8 @@ function isDuplicate(employeeName, clientName, action) {
 
 // ---------- Open session check ----------
 async function checkForOpenSession(employeeName) {
-  console.log('🔍 Checking for open session:', employeeName);
   try {
     const result = await apiPost('checkOpenSession', { employeeName });
-    console.log('✅ Open session result:', result);
     return result.openSession || null;
   } catch (e) {
     console.error('❌ Error checking open session:', e);
@@ -234,11 +285,19 @@ window.submitClock = async function(action) {
     btn.disabled = true;
     btn.style.opacity = '0.5';
     btn.style.cursor = 'not-allowed';
+    btn.textContent = '⏳ Processing...';
   });
   
   window.setStatus(`📤 ${action}ing... Please wait`, 'warn');
   
   try {
+    // ✅ REFRESH GPS BEFORE CLOCKING
+    console.log('🔄 Refreshing GPS...');
+    const freshGPS = await refreshGPS();
+    if (freshGPS.lat && freshGPS.lng) {
+      console.log('✅ Using fresh GPS:', freshGPS);
+    }
+    
     const employeeName = document.getElementById('employee')?.value || '';
     const employeeEmail = document.getElementById('employeeEmail')?.value || '';
     const role = document.getElementById('role')?.value || '';
@@ -248,6 +307,13 @@ window.submitClock = async function(action) {
     const mileage = (action === 'Clock Out' && mileageVal !== '') ? parseFloat(mileageVal) : '';
 
     console.log('📋 Form data:', { employeeName, employeeEmail, role, clientName, note, mileage });
+
+    // ✅ VALIDATE EMAIL (detect old cached versions)
+    if (employeeEmail && !employeeEmail.includes('@somdhomehealth.com')) {
+      alert('⚠️ OLD VERSION DETECTED!\n\nPlease:\n1. Close this page\n2. Clear browser cache\n3. Restart your phone\n4. Come back');
+      reEnableButtons();
+      return;
+    }
 
     if (!employeeName) {
       window.setStatus('⚠️ Please select your name first.', 'err');
@@ -262,7 +328,7 @@ window.submitClock = async function(action) {
     }
 
     if (isDuplicate(employeeName, clientName, action)) {
-      window.setStatus(`⚠️ You just ${action.toLowerCase()}ed. Wait 5 seconds.`, 'warn');
+      window.setStatus(`⚠️ Please wait 5 seconds between clicks.`, 'warn');
       reEnableButtons();
       return;
     }
@@ -274,21 +340,19 @@ window.submitClock = async function(action) {
         const openSession = await checkForOpenSession(employeeName);
         if (openSession) {
           const clockInTime = new Date(openSession.clockIn);
-          console.log('⚠️ Found open session:', openSession);
           
           const input = prompt(
             `⚠️ You're still clocked in at ${openSession.client} since ${clockInTime.toLocaleTimeString()}.\n\n` +
             `Enter the time you LEFT that client (HH:MM or 2:15 PM).\n` +
-            `Press Cancel to auto-close it at the current time and continue.`
+            `Press Cancel to auto-close at current time.`
           );
           
           if (input && input.trim()) {
             previousClockOut = input.trim();
-            console.log('✏️ User provided previous clock out time:', previousClockOut);
           }
         }
       } catch (e) {
-        console.error('❌ Error checking for open session:', e);
+        console.error('❌ Error checking open session:', e);
       }
     }
 
@@ -310,10 +374,8 @@ window.submitClock = async function(action) {
     console.log('📦 Payload:', payload);
 
     await saveToIndexedDB(payload);
-    console.log('💾 Saved to IndexedDB');
 
     if (!navigator.onLine) {
-      console.log('📴 Offline - will sync later');
       window.setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
       reEnableButtons();
       return;
@@ -321,8 +383,7 @@ window.submitClock = async function(action) {
 
     const success = await sendToServer(payload);
     if (success) {
-      console.log('✅ Confirmed by server');
-      window.setStatus(`✅ ${action} confirmed.`, 'ok');
+      window.setStatus(`✅ ${action} confirmed!`, 'ok');
       await markAsSynced(payload.id);
 
       if (action === 'Clock Out') {
@@ -330,8 +391,7 @@ window.submitClock = async function(action) {
         const n = document.getElementById('note'); if (n) n.value = '';
       }
     } else {
-      console.warn('⚠️ Not confirmed - will retry');
-      window.setStatus(`⚠️ ${action} saved (pending sync).`, 'warn');
+      window.setStatus(`⚠️ ${action} saved (will sync).`, 'warn');
     }
     
   } catch (error) {
@@ -345,7 +405,7 @@ window.submitClock = async function(action) {
 
 // ---------- Send to server ----------
 async function sendToServer(payload, retry = 0) {
-  const maxRetries = 6;
+  const maxRetries = 3; // Reduced from 6
 
   try {
     const result = await apiPost('clock', {
@@ -370,15 +430,18 @@ async function sendToServer(payload, retry = 0) {
     const msg = (result?.message || '').toString();
     console.warn('⚠️ Server rejected:', msg);
     
+    // Show error to user
+    window.setStatus(`⚠️ ${msg}`, 'err');
+    
     const hardRejects = ['Outside geofence', 'Wait', 'just clocked', 'You just'];
     
     if (hardRejects.some(phrase => msg.includes(phrase))) {
-      console.log('🛑 Hard reject');
       return false;
     }
 
     if (retry < maxRetries) {
       const delay = (retry + 1) * 1500;
+      console.log(`⏳ Retrying in ${delay}ms...`);
       await new Promise(r => setTimeout(r, delay));
       return sendToServer(payload, retry + 1);
     }
@@ -399,7 +462,7 @@ async function sendToServer(payload, retry = 0) {
 // ---------- IndexedDB ----------
 function openDB() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open('TimeClockDB', 3);
+    const req = indexedDB.open('TimeClockDB', 4); // ✅ Bumped version
     req.onerror = () => reject(req.error);
     req.onsuccess = () => resolve(req.result);
     req.onupgradeneeded = (event) => {
@@ -456,7 +519,6 @@ async function syncPendingActions() {
   if (syncInProgress || !navigator.onLine) return;
   
   syncInProgress = true;
-  console.log('🔄 Syncing pending actions...');
 
   try {
     const db = await openDB();
@@ -469,8 +531,7 @@ async function syncPendingActions() {
       r.onerror = () => resolve([]);
     });
 
-    const pending = all.filter(x => !x.synced && (x.retries ?? 0) < 10);
-    console.log(`📋 Found ${pending.length} pending`);
+    const pending = all.filter(x => !x.synced && (x.retries ?? 0) < 5); // Reduced from 10
     
     for (const item of pending) {
       const ok = await sendToServer(item);
@@ -510,7 +571,7 @@ document.addEventListener('visibilitychange', () => {
 
 // ---------- Init ----------
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 App.js loaded');
+  console.log('🚀 App v4.0.0 loaded');
   updateOnlineStatus();
   getLoc();
   window.loadMeta();
