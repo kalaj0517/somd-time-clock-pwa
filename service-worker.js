@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3.1.0-mobile-fix';  // ✅ Updated version to force refresh
+const CACHE_VERSION = 'v4.0.0-NUCLEAR-RESET';
 const CACHE_NAME = `time-clock-${CACHE_VERSION}`;
 
 const BASE_PATH = '/somd-time-clock-pwa';
@@ -14,27 +14,49 @@ const CACHE_FILES = [
 ];
 
 self.addEventListener('install', (event) => {
-  console.log('📦 Service Worker installing v3.1.0-mobile-fix');
+  console.log('📦 SW v4.0.0 installing - NUCLEAR CACHE RESET');
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.keys()
+      .then(names => {
+        // Delete ALL old caches
+        console.log('🗑️ Deleting ALL old caches:', names);
+        return Promise.all(names.map(n => caches.delete(n)));
+      })
+      .then(() => caches.open(CACHE_NAME))
       .then(cache => cache.addAll(CACHE_FILES))
       .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('✅ Service Worker activating - clearing old caches');
+  console.log('✅ SW v4.0.0 activating');
   event.waitUntil(
     caches.keys()
       .then(names => {
-        console.log('🗑️ Deleting old caches:', names.filter(n => n !== CACHE_NAME));
-        return Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)));
+        // Keep only current version
+        return Promise.all(
+          names
+            .filter(n => n !== CACHE_NAME)
+            .map(n => {
+              console.log('🗑️ Deleting old cache:', n);
+              return caches.delete(n);
+            })
+        );
       })
       .then(() => self.clients.claim())
+      .then(() => {
+        // Force refresh all clients
+        return self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            console.log('🔄 Refreshing client:', client.url);
+            client.postMessage({ type: 'CACHE_CLEARED', version: CACHE_VERSION });
+          });
+        });
+      })
   );
 });
 
-// IMPORTANT: Never cache API calls (script.google.com)
+// Never cache API calls
 self.addEventListener('fetch', (event) => {
   if (!event.request.url.startsWith('http')) return;
 
@@ -50,17 +72,37 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for static assets
+  // Network-first for HTML/JS (during cache crisis)
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(response => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for everything else
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
-
       return fetch(event.request).then((resp) => {
         if (!resp || resp.status !== 200) return resp;
         const clone = resp.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return resp;
-      }).catch(() => caches.match(`${BASE_PATH}/index.html`));
+      });
     })
   );
+});
+
+// Listen for messages from clients
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
