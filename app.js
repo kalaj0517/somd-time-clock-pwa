@@ -1,4 +1,4 @@
-// CareTeam Time Clock PWA - Clean Version v2.1.0
+// CareTeam Time Clock PWA - Clean Version v3.2.0
 // Fixed: Removed duplicate code, proper button re-enabling
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbyQ_Q7Wi7XQAOnYbxZWRjCM2MlBdU3x0mFhgzOZuqX8ApEFJimHEvlQY1SF6s6oEtqH/exec';
