@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paystub Generator - SOMD</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #FFC857 0%, #C79712 100%);
+            min-height: 100vh;
+            padding: 10px;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            color: #C79712;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .back-button {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 15px;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .card h2 {
+            color: #C79712;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 2px solid #EAD266;
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #EAD266;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .calculated {
+            background: #f5f5f5;
+            font-weight: bold;
+            color: #C79712;
+        }
+
+        .btn {
+            background: #EAD266;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            box-shadow: 0 2px 8px rgba(234, 210, 102, 0.3);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: #28a745;
+        }
+
+        .preview-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .company-header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #B8936C;
+            padding-bottom: 10px;
+        }
+
+        .company-name {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .company-address {
+            font-size: 9pt;
+            color: #666;
+            margin: 2px 0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            font-size: 10pt;
+            flex-wrap: wrap;
+        }
+
+        .info-label {
+            font-weight: bold;
+        }
+
+        .section-header {
+            background-color: #B8936C;
+            color: white;
+            padding: 8px;
+            font-weight: bold;
+            font-size: 11pt;
+            margin: 15px 0 5px 0;
+            text-align: center;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 9pt;
+        }
+
+        table th,
+        table td {
+            border: 1px solid #999;
+            padding: 6px 4px;
+            text-align: right;
+        }
+
+        table th {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+
+        table td:first-child,
+        table th:first-child {
+            text-align: left;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 11pt;
+        }
+
+        .summary-label {
+            font-weight: bold;
+        }
+
+        .net-pay {
+            color: #B8936C;
+            font-weight: bold;
+        }
+
+        .footer-note {
+            font-size: 8pt;
+            color: #666;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        .action-buttons {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 10px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .header, .card:first-child, .back-button, .action-buttons {
+                display: none !important;
+            }
+            .preview-section {
+                box-shadow: none;
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button">← Back to Time Clock</a>
+
+    <div class="header">
+        <h1>💼 Paystub Generator</h1>
+        <p>Create professional paystubs</p>
+    </div>
+
+    <div class="card">
+        <h2>📝 Employee Information</h2>
+        
+        <div class="form-group">
+            <label>Employee Name</label>
+            <input type="text" id="employeeName" placeholder="Full name">
+        </div>
+
+        <div class="form-group">
+            <label>Pay Period Start</label>
+            <input type="date" id="periodStart">
+        </div>
+
+        <div class="form-group">
+            <label>Pay Period End / Deposit Date</label>
+            <input type="date" id="periodEnd">
+        </div>
+
+        <div class="form-group">
+            <label>Reference Number</label>
+            <input type="text" id="refNumber" placeholder="e.g., 113786">
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>💵 Pay Rates</h2>
+
+        <div class="form-group">
+            <label>Regular Hourly Rate</label>
+            <input type="number" id="regularRate" value="30.00" step="0.01" min="0" oninput="calculateTotals()">
+            <div class="help-text">Base hourly pay</div>
+        </div>
+
+        <div class="form-group">
+            <label>Overtime/Holiday Rate</label>
+            <input type="number" id="overtimeRate" value="45.00" step="0.01" min="0" oninput="calculateTotals()">
+            <div class="help-text">OT & holiday pay (usually 1.5x regular)</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>⏰ Hours This Period</h2>
+
+        <div class="form-group">
+            <label>Regular Hours</label>
+            <input type="number" id="regularHours" value="0.00" step="0.01" min="0" oninput="calculateTotals()">
+            <div class="help-text">Hours at regular rate</div>
+        </div>
+
+        <div class="form-group">
+            <label>Holiday Hours</label>
+            <input type="number" id="holidayHours" value="0.00" step="0.01" min="0" oninput="calculateTotals()">
+            <div class="help-text">Hours at holiday rate</div>
+        </div>
+
+        <div class="form-group">
+            <label>Overtime Hours</label>
+            <input type="number" id="overtimeHours" value="0.00" step="0.01" min="0" oninput="calculateTotals()">
+            <div class="help-text">Hours at overtime rate</div>
+        </div>
+
+        <div class="form-group">
+            <label>Total Hours</label>
+            <input type="number" id="totalHours" class="calculated" readonly value="0.00">
+        </div>
+
+        <div class="form-group">
+            <label>Gross Pay</label>
+            <input type="text" id="grossPay" class="calculated" readonly value="$0.00">
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>📊 Year-to-Date</h2>
+
+        <div class="form-group">
+            <label>YTD Regular Amount</label>
+            <input type="number" id="ytdRegular" value="0.00" step="0.01" oninput="calculateYTD()">
+        </div>
+
+        <div class="form-group">
+            <label>YTD Holiday Amount</label>
+            <input type="number" id="ytdHoliday" value="0.00" step="0.01" oninput="calculateYTD()">
+        </div>
+
+        <div class="form-group">
+            <label>YTD Overtime Amount</label>
+            <input type="number" id="ytdOvertime" value="0.00" step="0.01" oninput="calculateYTD()">
+        </div>
+
+        <div class="form-group">
+            <label>YTD Gross Total</label>
+            <input type="text" id="ytdGross" class="calculated" readonly value="$0.00">
+        </div>
+
+        <div class="form-group">
+            <label>Client Hours (Optional)</label>
+            <textarea id="clientHours" rows="2" placeholder="e.g., Billy: 20h, Bucky: 15h"></textarea>
+        </div>
+
+        <button class="btn" onclick="generatePaystub()">📄 Generate Preview</button>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="preview-section" id="paystubPreview" style="display: none;">
+        <div class="company-header">
+            <div class="company-name">Southern Maryland Home Health, LLC</div>
+            <div class="company-address">P.O. BOX 255</div>
+            <div class="company-address">Newburg, MD 20664</div>
+            <div class="company-address">240-530-0527</div>
+        </div>
+
+        <div style="margin: 15px 0; font-size: 10pt;">
+            <div class="info-row">
+                <span><span class="info-label">Employee:</span> <span id="preview-employee">-</span></span>
+                <span><span class="info-label">Ref:</span> <span id="preview-ref">-</span></span>
+            </div>
+            <div class="info-row">
+                <span><span class="info-label">Period:</span> <span id="preview-period">-</span></span>
+            </div>
+            <div class="info-row">
+                <span><span class="info-label">Deposit:</span> <span id="preview-deposit">-</span></span>
+                <span><span class="info-label">Frequency:</span> Weekly</span>
+            </div>
+        </div>
+
+        <div class="section-header">Earnings</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Rate</th>
+                    <th>Hrs</th>
+                    <th>Amount</th>
+                    <th>YTD</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Regular</td>
+                    <td id="preview-reg-rate">$30.00</td>
+                    <td id="preview-reg-hrs">0.00</td>
+                    <td id="preview-reg-amt">$0.00</td>
+                    <td id="preview-ytd-reg">$0.00</td>
+                </tr>
+                <tr>
+                    <td>Holiday</td>
+                    <td id="preview-hol-rate">$45.00</td>
+                    <td id="preview-hol-hrs">0.00</td>
+                    <td id="preview-hol-amt">$0.00</td>
+                    <td id="preview-ytd-hol">$0.00</td>
+                </tr>
+                <tr>
+                    <td>Overtime</td>
+                    <td id="preview-ot-rate">$45.00</td>
+                    <td id="preview-ot-hrs">0.00</td>
+                    <td id="preview-ot-amt">$0.00</td>
+                    <td id="preview-ytd-ot">$0.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-header">Deductions</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>YTD</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>No Deductions (1099)</td>
+                    <td>0.00</td>
+                    <td>0.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="margin: 15px 0;">
+            <div class="summary-row">
+                <span class="summary-label">Gross Pay:</span>
+                <span id="preview-gross">$0.00</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Deductions:</span>
+                <span>$0.00</span>
+            </div>
+            <div class="summary-row net-pay">
+                <span>Net Pay:</span>
+                <span id="preview-net">$0.00</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">YTD Gross:</span>
+                <span id="preview-ytd-gross">$0.00</span>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            Note: Employee is classified as 1099 contractor - no tax withholdings applied
+        </div>
+        <div class="footer-note" id="preview-client-hours" style="margin-top: 5px; display: none;"></div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ Print PDF</button>
+        <button class="btn" onclick="copyData()">📋 Copy</button>
+    </div>
+
+    <script>
+        function calculateTotals() {
+            const regularRate = parseFloat(document.getElementById('regularRate').value) || 0;
+            const overtimeRate = parseFloat(document.getElementById('overtimeRate').value) || 0;
+            
+            const regular = parseFloat(document.getElementById('regularHours').value) || 0;
+            const holiday = parseFloat(document.getElementById('holidayHours').value) || 0;
+            const overtime = parseFloat(document.getElementById('overtimeHours').value) || 0;
+            
+            const totalHours = regular + holiday + overtime;
+            const grossPay = (regular * regularRate) + (holiday * overtimeRate) + (overtime * overtimeRate);
+            
+            document.getElementById('totalHours').value = totalHours.toFixed(2);
+            document.getElementById('grossPay').value = '$' + grossPay.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            
+            updateCurrentYTD();
+        }
+
+        function updateCurrentYTD() {
+            const regularRate = parseFloat(document.getElementById('regularRate').value) || 0;
+            const overtimeRate = parseFloat(document.getElementById('overtimeRate').value) || 0;
+            
+            const regular = parseFloat(document.getElementById('regularHours').value) || 0;
+            const holiday = parseFloat(document.getElementById('holidayHours').value) || 0;
+            const overtime = parseFloat(document.getElementById('overtimeHours').value) || 0;
+            
+            const currentRegular = regular * regularRate;
+            const currentHoliday = holiday * overtimeRate;
+            const currentOvertime = overtime * overtimeRate;
+            
+            const prevYTDReg = parseFloat(document.getElementById('ytdRegular').value) || 0;
+            const prevYTDHol = parseFloat(document.getElementById('ytdHoliday').value) || 0;
+            const prevYTDOT = parseFloat(document.getElementById('ytdOvertime').value) || 0;
+            
+            const newYTDReg = prevYTDReg + currentRegular;
+            const newYTDHol = prevYTDHol + currentHoliday;
+            const newYTDOT = prevYTDOT + currentOvertime;
+            const newYTDGross = newYTDReg + newYTDHol + newYTDOT;
+            
+            document.getElementById('ytdGross').value = '$' + newYTDGross.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function calculateYTD() {
+            const ytdReg = parseFloat(document.getElementById('ytdRegular').value) || 0;
+            const ytdHol = parseFloat(document.getElementById('ytdHoliday').value) || 0;
+            const ytdOT = parseFloat(document.getElementById('ytdOvertime').value) || 0;
+            
+            const ytdGross = ytdReg + ytdHol + ytdOT;
+            document.getElementById('ytdGross').value = '$' + ytdGross.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${month}/${day}/${year}`;
+        }
+
+        function generatePaystub() {
+            const regularRate = parseFloat(document.getElementById('regularRate').value) || 0;
+            const overtimeRate = parseFloat(document.getElementById('overtimeRate').value) || 0;
+            
+            const employeeName = document.getElementById('employeeName').value || '-';
+            const refNumber = document.getElementById('refNumber').value || '-';
+            const periodStart = formatDate(document.getElementById('periodStart').value);
+            const periodEnd = formatDate(document.getElementById('periodEnd').value);
+            
+            const regularHours = parseFloat(document.getElementById('regularHours').value) || 0;
+            const holidayHours = parseFloat(document.getElementById('holidayHours').value) || 0;
+            const overtimeHours = parseFloat(document.getElementById('overtimeHours').value) || 0;
+            
+            const regularAmt = regularHours * regularRate;
+            const holidayAmt = holidayHours * overtimeRate;
+            const overtimeAmt = overtimeHours * overtimeRate;
+            const grossPay = regularAmt + holidayAmt + overtimeAmt;
+            
+            const ytdRegular = parseFloat(document.getElementById('ytdRegular').value) || 0;
+            const ytdHoliday = parseFloat(document.getElementById('ytdHoliday').value) || 0;
+            const ytdOvertime = parseFloat(document.getElementById('ytdOvertime').value) || 0;
+            
+            const newYTDReg = ytdRegular + regularAmt;
+            const newYTDHol = ytdHoliday + holidayAmt;
+            const newYTDOT = ytdOvertime + overtimeAmt;
+            const newYTDGross = newYTDReg + newYTDHol + newYTDOT;
+            
+            const clientHours = document.getElementById('clientHours').value;
+            
+            // Update preview
+            document.getElementById('preview-employee').textContent = employeeName;
+            document.getElementById('preview-ref').textContent = refNumber;
+            document.getElementById('preview-period').textContent = `${periodStart} - ${periodEnd}`;
+            document.getElementById('preview-deposit').textContent = periodEnd;
+            
+            document.getElementById('preview-reg-rate').textContent = '$' + regularRate.toFixed(2);
+            document.getElementById('preview-hol-rate').textContent = '$' + overtimeRate.toFixed(2);
+            document.getElementById('preview-ot-rate').textContent = '$' + overtimeRate.toFixed(2);
+            
+            document.getElementById('preview-reg-hrs').textContent = regularHours.toFixed(2);
+            document.getElementById('preview-reg-amt').textContent = '$' + regularAmt.toFixed(2);
+            document.getElementById('preview-ytd-reg').textContent = '$' + newYTDReg.toFixed(2);
+            
+            document.getElementById('preview-hol-hrs').textContent = holidayHours.toFixed(2);
+            document.getElementById('preview-hol-amt').textContent = '$' + holidayAmt.toFixed(2);
+            document.getElementById('preview-ytd-hol').textContent = '$' + newYTDHol.toFixed(2);
+            
+            document.getElementById('preview-ot-hrs').textContent = overtimeHours.toFixed(2);
+            document.getElementById('preview-ot-amt').textContent = '$' + overtimeAmt.toFixed(2);
+            document.getElementById('preview-ytd-ot').textContent = '$' + newYTDOT.toFixed(2);
+            
+            document.getElementById('preview-gross').textContent = '$' + grossPay.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            document.getElementById('preview-net').textContent = '$' + grossPay.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            document.getElementById('preview-ytd-gross').textContent = '$' + newYTDGross.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            
+            const clientElement = document.getElementById('preview-client-hours');
+            if (clientHours.trim()) {
+                clientElement.textContent = `Client Hours: ${clientHours}`;
+                clientElement.style.display = 'block';
+            } else {
+                clientElement.style.display = 'none';
+            }
+            
+            // Show preview
+            document.getElementById('paystubPreview').style.display = 'block';
+            document.getElementById('paystubPreview').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function copyData() {
+            const data = {
+                employee: document.getElementById('employeeName').value,
+                refNumber: document.getElementById('refNumber').value,
+                periodStart: document.getElementById('periodStart').value,
+                periodEnd: document.getElementById('periodEnd').value,
+                regularRate: document.getElementById('regularRate').value,
+                overtimeRate: document.getElementById('overtimeRate').value,
+                regularHours: document.getElementById('regularHours').value,
+                holidayHours: document.getElementById('holidayHours').value,
+                overtimeHours: document.getElementById('overtimeHours').value,
+                ytdRegular: document.getElementById('ytdRegular').value,
+                ytdHoliday: document.getElementById('ytdHoliday').value,
+                ytdOvertime: document.getElementById('ytdOvertime').value,
+                clientHours: document.getElementById('clientHours').value
+            };
+            
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2))
+                .then(() => alert('✅ Data copied!'))
+                .catch(() => alert('❌ Could not copy'));
+        }
+
+        window.onload = function() {
+            calculateTotals();
+            calculateYTD();
+        };
+    </script>
+</body>
+</html>
