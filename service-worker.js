@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v4.0.0-NUCLEAR-RESET';
+const CACHE_VERSION = 'v4.1.0-PAYSTUB';
 const CACHE_NAME = `time-clock-${CACHE_VERSION}`;
 
 const BASE_PATH = '/somd-time-clock-pwa';
@@ -7,6 +7,7 @@ const CACHE_FILES = [
   `${BASE_PATH}/`,
   `${BASE_PATH}/index.html`,
   `${BASE_PATH}/my-times.html`,
+  `${BASE_PATH}/paystub.html`,
   `${BASE_PATH}/app.js`,
   `${BASE_PATH}/manifest.json`,
   `${BASE_PATH}/icon-192.png`,
